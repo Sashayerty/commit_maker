@@ -9,14 +9,13 @@ import urllib.request
 # Константы
 
 mistral_api_key = os.environ["MISTRAL_API_KEY"]
-prompt = """Привет! Ты составитель коммитов для git. Твоя задача, опираясь на
-данные от 'git status' и 'git diff' написать короткий и ёмкий коммит. В ответ
-на это сообщение тебе нужно предоставить ТОЛЬКО коммит. Пиши просто обычный
-текст, без markdown!"""
+prompt_for_ai = """Привет! Ты составитель коммитов для git. Твоя задача,
+опираясь на данные от 'git status' и 'git diff' написать короткий и ёмкий
+коммит на русском языке. В ответ на это сообщение тебе нужно предоставить
+ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
+
 
 # Класс для использования API Mistral AI
-
-
 class MistralAI:
     """Класс для общения с MistralAI. Написан с помощью urllib."""
 
@@ -36,9 +35,15 @@ class MistralAI:
         self.data = {
             "model": "mistral-small-latest",
             "messages": [],
+            "temperature": 0.7,
         }
 
-    def message(self, message: str, role: str = "user") -> str:
+    def message(
+        self,
+        message: str,
+        role: str = "user",
+        temperature: float = 0.7,
+    ) -> str:
         """Функция сообщения
 
         Args:
@@ -76,13 +81,13 @@ class MistralAI:
 
 
 # client = MistralAI(api_key=mistral_api_key)
-# print((client.message(message=prompt + "Git status:" + "" + "Git diff" + ""))
+# print((client.message(message=prompt_for_ai + "Git status:" + "" + "Git diff" + ""))
 
 # main функция
 
 
 def main() -> None:
-    global mistral_api_key, prompt
+    global mistral_api_key, prompt_for_ai
     try:
         # Получаем версию git, если он есть
         git_version = subprocess.run(  # noqa
@@ -116,17 +121,18 @@ def main() -> None:
             retry = True
             while retry:
                 commit_message = client.message(
-                    message=prompt
+                    message=prompt_for_ai
                     + "Git status: "
                     + git_status.stdout.decode()
                     + "Git diff: "
-                    + git_diff.stdout.decode()
+                    + git_diff.stdout.decode(),
+                    temperature=1.0,
                 )
                 commit_with_message_from_ai = input(
                     "Закоммитить с сообщением "
-                    f"'{commit_message}'? [y/N/retry]: "
+                    f"'{commit_message}'? [y/N/r]: "
                 )
-                if commit_with_message_from_ai != "retry":
+                if commit_with_message_from_ai != "r":
                     retry = False
                     break
             if commit_with_message_from_ai == "y":
