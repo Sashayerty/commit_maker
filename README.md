@@ -1,4 +1,4 @@
-# Генератор сообщений для коммитов с использованием ИИ
+# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-blue)]()
 
 Эта CLI-утилита автоматически создает осмысленные сообщения для git-коммитов, используя Mistral AI на основе вывода команд `git status` и `git diff`.
 
