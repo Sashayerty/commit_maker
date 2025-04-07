@@ -1,4 +1,5 @@
 # CLI-утилита, которая будет создавать сообщение для коммита на основе ИИ.
+# noqa: F841
 
 import json
 import os
@@ -13,6 +14,11 @@ prompt_for_ai = """Привет! Ты составитель коммитов д
 опираясь на данные от 'git status' и 'git diff' написать короткий и ёмкий
 коммит на русском языке. В ответ на это сообщение тебе нужно предоставить
 ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
+# Для цветных логов
+COLOR_RED = "\033[31m"
+COLOR_GREEN = "\033[32m"
+COLOR_YELLOW = "\033[33m"
+COLOR_RESET = "\033[0m"
 
 
 # Класс для использования API Mistral AI
@@ -80,9 +86,6 @@ class MistralAI:
             print(f"Ответ сервера: {e.read().decode()}")
 
 
-# client = MistralAI(api_key=mistral_api_key)
-# print((client.message(message=prompt_for_ai + "Git status:" + "" + "Git diff" + ""))
-
 # main функция
 
 
@@ -96,7 +99,6 @@ def main() -> None:
         ).stdout.decode()
 
         # Проверяем, есть ли .git
-
         dot_git = ".git" in os.listdir("./")
 
         # Если есть
@@ -106,17 +108,51 @@ def main() -> None:
                 ["git", "status", "-v"],
                 capture_output=True,
             )
+
             git_diff = subprocess.run(
-                ["git", "diff", "--staged"], capture_output=True
+                ["git", "diff", "--staged"],
+                capture_output=True,
             )
             if not git_diff.stdout:
-                print("Нет изменений в staged. Добавляю всё автоматически!")
-                subprocess.run(["git", "add", "-A"])
-            if not git_status.stdout and not git_diff.stdout:
-                print("Нет добавленных изменений!")
+                if (
+                    input(
+                        f"{COLOR_RED}Нет застейдженных изменений!"
+                        f"{COLOR_RESET} Добавить всё автоматически "
+                        f"с помощью {COLOR_YELLOW}'git add -A'{COLOR_RESET}? "
+                        "[y/N]: "
+                    )
+                    == "y"
+                ):
+                    subprocess.run(
+                        ["git", "add", "-A"],
+                        capture_output=True,
+                    )
+                else:
+                    print(
+                        f"{COLOR_YELLOW}Добавьте необходимые "
+                        f"файлы вручную.{COLOR_RESET}"
+                    )
+                    return None
+                git_diff = subprocess.run(
+                    ["git", "diff", "--staged"],
+                    capture_output=True,
+                )
+            if subprocess.run(
+                ["git", "diff"],
+                capture_output=True,
+            ).stdout:
+                print(
+                    f"{COLOR_RED}Обратите внимание, что у Вас есть "
+                    f"незастейдженные изменения!{COLOR_RESET} Для добавления "
+                    f"дополнительных файлов {COLOR_YELLOW}Ctrl + "
+                    f"C{COLOR_RESET} и выполните {COLOR_YELLOW}'git add "
+                    f"<filename>'{COLOR_RESET}."
+                )
+            if (
+                not git_status.stdout and not git_diff.stdout
+            ):  # Проверка на отсутствие каких-либо изменений
+                print(f"{COLOR_RED}Нет добавленных изменений!{COLOR_RESET}")
                 return None
-            # print(git_status.stdout.decode())
-            # print(git_diff.stdout.decode())
             client = MistralAI(
                 api_key=mistral_api_key,
             )
@@ -132,17 +168,14 @@ def main() -> None:
                 )
                 commit_with_message_from_ai = input(
                     "Закоммитить с сообщением "
-                    f"'{commit_message}'? [y/N/r]: "
+                    f"{COLOR_YELLOW}'{commit_message}'{COLOR_RESET}? [y/N/r]: "
                 )
                 if commit_with_message_from_ai != "r":
                     retry = False
                     break
             if commit_with_message_from_ai == "y":
-                subprocess.run(
-                    ["git", "add", "-A"],
-                    capture_output=True,
-                )
                 subprocess.run(["git", "commit", "-m", f"{commit_message}"])
+                print(f"{COLOR_GREEN}Коммит успешно создан!{COLOR_RESET}")
 
         # Если нет
         else:
@@ -150,7 +183,7 @@ def main() -> None:
                 True
                 if input(
                     "Не инициализирован git репозиторий! "
-                    "Выполнить 'git init'? [y/N]: "
+                    f"Выполнить {COLOR_YELLOW}'git init'{COLOR_RESET}? [y/N]: "
                 )
                 == "y"
                 else False
@@ -178,13 +211,13 @@ def main() -> None:
                     )
                     if input(
                         "Сделать первый коммит с сообщением "
-                        "'Initial commit?' [y/N]: "
+                        f"{COLOR_YELLOW}'Initial commit?'{COLOR_RESET} [y/N]: "
                     )
                     == "y"
                     else None
                 )
     except Exception as e:
-        print(e)
+        print(f"{COLOR_RED}Ошибка:{COLOR_RESET} {e}")
 
 
 if __name__ == "__main__":
