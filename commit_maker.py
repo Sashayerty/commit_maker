@@ -113,6 +113,18 @@ def main() -> None:
                 ["git", "diff", "--staged"],
                 capture_output=True,
             )
+            if (
+                not git_status.stdout
+                and (not git_diff.stdout)
+                and (
+                    not subprocess.run(
+                        ["git", "diff"],
+                        capture_output=True,
+                    ).stdout
+                )
+            ):  # Проверка на отсутствие каких-либо изменений
+                print(f"{COLOR_RED}Нет добавленных изменений!{COLOR_RESET}")
+                return None
             if not git_diff.stdout:
                 if (
                     input(
@@ -148,18 +160,6 @@ def main() -> None:
                     f"C{COLOR_RESET} и выполните {COLOR_YELLOW}'git add "
                     f"<filename>'{COLOR_RESET}."
                 )
-            if (
-                not git_status.stdout
-                and (not git_diff.stdout)
-                and (
-                    not subprocess.run(
-                        ["git", "diff"],
-                        capture_output=True,
-                    ).stdout
-                )
-            ):  # Проверка на отсутствие каких-либо изменений
-                print(f"{COLOR_RED}Нет добавленных изменений!{COLOR_RESET}")
-                return None
             client = MistralAI(
                 api_key=mistral_api_key,
             )
