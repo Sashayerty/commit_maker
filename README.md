@@ -55,6 +55,49 @@ cd ./commit_maker
    - Для существующих репозиториев: проверьте и подтвердите сгенерированное ИИ сообщение коммита
    - Для новых репозиториев: выберите, нужно ли инициализировать Git-репозиторий и сделать начальный коммит
 
+## Создание исполняемого файла с помощью pyinstaller
+
+### Linux/MacOS
+1. Устанавливаем pyinstaller:
+   ```bash
+   # pip
+   pip3 install pyinstaller
+   # uv
+   uv add pyinstaller
+   ```
+2. Выполняем:
+   ```bash
+   # pip
+   pyinstaller --onefile commit_maker.py
+   # uv 
+   uv run pyinstaller --onefile commit_maker.py
+   ```
+3. Создается 2 директории: `./dist` и `./build`, нам нужна `./dist`, там лежит `commit_maker`
+4. Перемещение файла и превращение в исполняемый:
+   ```bash
+   sudo mv ./dist/commit_maker /usr/bin # После этого все готово к работе!
+   ```
+### Windows:
+1. Устанавливаем pyinstaller:
+   ```bash
+   # pip
+   pip install pyinstaller
+   # uv
+   uv add pyinstaller
+   ```
+2. Выполняем:
+   ```bash
+   # pip
+   pyinstaller --onefile commit_maker.py
+   # uv 
+   uv run pyinstaller --onefile commit_maker.py
+   ```
+3. Создается 2 директории: `./dist` и `./build`, нам нужна `./dist`, там лежит `commit_maker.exe`
+4. Создаем папку `commit_maker` в `C:/Program Files/`. Далее копируем файл `commit_maker.exe` из `./dist` и перемещаем в  `C:/Users/User/Program Files/commit_maker`. Далее открываем Панель управления -> Система и безопасность -> Система -> Дополнительные параметры системы -> Переменные среды -> Path(в системных переменных)(двойной клик) -> Создать. Добавляем `C:/Program Files/commit_maker`. После вышеописанных действий, у Вас в консоли должно все заработать. Пример использования:  
+```cmd
+commit_maker.exe
+```
+
 ## Примечания
 
 - Скрипт покажет сгенерированное сообщение коммита перед его созданием
