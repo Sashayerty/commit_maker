@@ -107,9 +107,11 @@ def main() -> None:
                 capture_output=True,
             )
             git_diff = subprocess.run(
-                ["git", "diff"],
-                capture_output=True,
+                ["git", "diff", "--staged"], capture_output=True
             )
+            if not git_diff.stdout:
+                print("Нет изменений в staged. Добавляю всё автоматически!")
+                subprocess.run(["git", "add", "-A"])
             if not git_status.stdout and not git_diff.stdout:
                 print("Нет добавленных изменений!")
                 return None
