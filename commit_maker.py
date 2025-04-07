@@ -149,7 +149,14 @@ def main() -> None:
                     f"<filename>'{COLOR_RESET}."
                 )
             if (
-                not git_status.stdout and not git_diff.stdout
+                not git_status.stdout
+                and (not git_diff.stdout)
+                and (
+                    not subprocess.run(
+                        ["git", "diff"],
+                        capture_output=True,
+                    ).stdout
+                )
             ):  # Проверка на отсутствие каких-либо изменений
                 print(f"{COLOR_RED}Нет добавленных изменений!{COLOR_RESET}")
                 return None
