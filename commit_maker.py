@@ -112,15 +112,24 @@ def main() -> None:
                 capture_output=True,
             )
 
+            new_files = subprocess.run(
+                ["git", "ls-files", "--others", "--exclude-standard"],
+                capture_output=True,
+            )
+
             git_diff = subprocess.run(
                 ["git", "diff", "--staged"],
                 capture_output=True,
             )
-            if (not git_diff.stdout) and (
-                not subprocess.run(
-                    ["git", "diff"],
-                    capture_output=True,
-                ).stdout
+            if (
+                (not new_files.stdout)
+                and (not git_diff.stdout)
+                and (
+                    not subprocess.run(
+                        ["git", "diff"],
+                        capture_output=True,
+                    ).stdout
+                )
             ):  # Проверка на отсутствие каких-либо изменений
                 print(f"{COLOR_RED}Нет добавленных изменений!{COLOR_RESET}")
                 return None
