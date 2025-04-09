@@ -9,19 +9,27 @@ import urllib
 import urllib.request
 
 # Константы
-
 mistral_api_key = os.environ["MISTRAL_API_KEY"]
+
 # Для цветных логов
 COLOR_RED = "\033[31m"
 COLOR_GREEN = "\033[32m"
 COLOR_YELLOW = "\033[33m"
 COLOR_RESET = "\033[0m"
+COLORS_DICT = {
+    "red": COLOR_RED,
+    "green": COLOR_GREEN,
+    "yellow": COLOR_YELLOW,
+    "reset": COLOR_RESET,
+}
+
 # Парсер параметров
 parser = argparse.ArgumentParser(
     prog="Commit Maker",
     usage="commit_maker [OPTION] [VALUE]",
-    description="CLI-утилита, которая будет создавать сообщение"
-    "для коммита на основе ИИ.",
+    description="CLI-утилита, которая будет создавать сообщение "
+    "для коммита на основе ИИ. Можно использовать локальные модели/Mistral AI "
+    "API. Локальные модели используют ollama.",
 )
 parser.add_argument(
     "--local-models",
@@ -34,18 +42,34 @@ parser.add_argument(
     "--max-symbols",
     "-m",
     type=int,
-    default=150,
+    default=250,
     metavar="[max_symbols]",
     help="Длина сообщения коммита. Defaults to 150",
 )
+parser.add_argument(
+    "--model",
+    "-M",
+    type=str,
+    metavar="[model]",
+    help="Модель, которую ollama будет использовать.",
+)
+parser.add_argument(
+    "--dry-run",
+    "-d",
+    action="store_true",
+    default=False,
+    help="Запуск с выводом сообщения, без создания коммита",
+)
+
 # Парсинг аргументов
 use_local_models = parser.parse_args().local_models
 max_symbols = parser.parse_args().max_symbols
-
+model = parser.parse_args().model
+dry_run = parser.parse_args().dry_run
 
 # Промпт для ИИ
 prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
-Сгенерируй коммит-месседж на русском языке, который:
+Сгенерируй коммит-месседж на РУССКОМ языке, который:
 1. Точно отражает суть изменений
 2. Не превышает {max_symbols} символов
 Опирайся на данные от 'git status' и 'git diff'.
@@ -186,11 +210,16 @@ class Ollama:
             print(f"Ответ сервера: {e.read().decode()}")
 
 
+def colored(string: str, color: str) -> str:
+    global COLORS_DICT
+    return f"{COLORS_DICT[color]}{string}{COLORS_DICT["reset"]}"
+
+
 # main функция
 
 
 def main() -> None:
-    global mistral_api_key, prompt_for_ai, use_local_models
+    global mistral_api_key, prompt_for_ai, use_local_models, model
     try:
         # Получаем версию git, если он есть
         git_version = subprocess.run(  # noqa
@@ -199,19 +228,84 @@ def main() -> None:
         ).stdout.decode()
 
         # Получаем версию Ollama, если есть
-        ollama_version = subprocess.run(
-            ["ollama", "-v"],
-            capture_output=True,
-            text=True,
-        ).stdout.strip()
+        ollama_list_of_models = (
+            subprocess.run(
+                ["ollama", "ls"],
+                capture_output=True,
+                text=True,
+            )
+            .stdout.strip()
+            .split("\n")
+        )
 
         # Обработка отсутствия ollama
-        if not ollama_version and use_local_models:
+        if not ollama_list_of_models and use_local_models:
             print(
-                f"{COLOR_YELLOW}Ollama не установлена!{COLOR_RESET} "
-                "Для установки перейдите по https://ollama.com/download"
+                colored("Ollama не установлена!", "yellow")
+                + " Для установки перейдите по https://ollama.com/download"
             )
             return None
+        elif not use_local_models and model:
+            print(
+                f"Для использования {model} локально используйте флаг "
+                + colored("--local-models", "yellow")
+                + ". Если нужна помощь: "
+                + colored("--help", "yellow")
+            )
+            return None
+        elif ollama_list_of_models and use_local_models:
+            ollama_list_of_models = [
+                i.split()[0] for i in ollama_list_of_models[1:]
+            ]
+            if not model:
+                if len(ollama_list_of_models) > 1:
+                    print(
+                        colored(
+                            "Для использования локальных моделей необходимо "
+                            "выбрать модель:",
+                            "yellow",
+                        )
+                        + "\n"
+                        + "\n".join(
+                            [
+                                f"{i + 1}. {model}"
+                                for i, model in enumerate(
+                                    ollama_list_of_models
+                                )
+                            ]
+                        )
+                    )
+                    model_is_selected = False
+                    while not model_is_selected:
+                        model = input(
+                            colored(
+                                "Введите число от 1 до "
+                                f"{len(ollama_list_of_models)}: ",
+                                "yellow",
+                            )
+                        )
+                        model = int(model) if model.isdigit() else -1
+                        if model > len(ollama_list_of_models) or model == -1:
+                            continue
+                        model = ollama_list_of_models[model - 1]
+                        model_is_selected = True
+                        break
+                else:
+                    model = ollama_list_of_models[0]
+            else:
+                if model not in ollama_list_of_models:
+                    print(
+                        colored(
+                            f"{model} не является доступной моделью! ", "red"
+                        )
+                        + "Доступные модели: "
+                        + colored(
+                            f"{', '.join(ollama_list_of_models)}", "yellow"
+                        )
+                    )
+                    return None
+        if model:
+            print("Выбрана модель: " + colored(model, "yellow"))
 
         # Проверяем, есть ли .git
         dot_git = ".git" in os.listdir("./")
@@ -222,16 +316,19 @@ def main() -> None:
             git_status = subprocess.run(
                 ["git", "status", "-v"],
                 capture_output=True,
+                text=True,
             )
 
             new_files = subprocess.run(
                 ["git", "ls-files", "--others", "--exclude-standard"],
                 capture_output=True,
+                text=True,
             )
 
             git_diff = subprocess.run(
                 ["git", "diff", "--staged"],
                 capture_output=True,
+                text=True,
             )
             if (
                 (not new_files.stdout)
@@ -243,15 +340,15 @@ def main() -> None:
                     ).stdout
                 )
             ):  # Проверка на отсутствие каких-либо изменений
-                print(f"{COLOR_RED}Нет добавленных изменений!{COLOR_RESET}")
+                print(colored("Нет добавленных изменений!", "red"))
                 return None
             if not git_diff.stdout:
                 if (
                     input(
-                        f"{COLOR_RED}Нет застейдженных изменений!"
-                        f"{COLOR_RESET} Добавить всё автоматически "
-                        f"с помощью {COLOR_YELLOW}'git add -A'{COLOR_RESET}? "
-                        "[y/N]: "
+                        colored("Нет застейдженных изменений!", "red")
+                        + " Добавить всё автоматически с помощью "
+                        + colored("'git add -A'", "yellow")
+                        + "? [y/N]: "
                     )
                     == "y"
                 ):
@@ -261,27 +358,34 @@ def main() -> None:
                     )
                 else:
                     print(
-                        f"{COLOR_YELLOW}Добавьте необходимые "
-                        f"файлы вручную.{COLOR_RESET}"
+                        colored(
+                            "Добавьте необходимые файлы вручную.", "yellow"
+                        )
                     )
                     return None
                 git_diff = subprocess.run(
                     ["git", "diff", "--staged"],
                     capture_output=True,
+                    text=True,
                 )
             if subprocess.run(
                 ["git", "diff"],
                 capture_output=True,
             ).stdout:
                 print(
-                    f"{COLOR_RED}Обратите внимание, что у Вас есть "
-                    f"незастейдженные изменения!{COLOR_RESET} Для добавления "
-                    f"дополнительных файлов {COLOR_YELLOW}Ctrl + "
-                    f"C{COLOR_RESET} и выполните {COLOR_YELLOW}'git add "
-                    f"<filename>'{COLOR_RESET}."
+                    colored(
+                        "Обратите внимание на то, что у Вас "
+                        "есть незастейдженные изменения!",
+                        "red",
+                    )
+                    + " Для добавления дополнительных файлов "
+                    + colored("Ctrl + C", "yellow")
+                    + " и выполните "
+                    + colored("'git add <filename>'", "yellow")
+                    + "."
                 )
             if use_local_models:
-                client = Ollama(model="gemma3:12b")
+                client = Ollama(model=model)
             else:
                 client = MistralAI(
                     api_key=mistral_api_key,
@@ -291,29 +395,31 @@ def main() -> None:
                 commit_message = client.message(
                     message=prompt_for_ai
                     + "Git status: "
-                    + git_status.stdout.decode()
+                    + git_status.stdout
                     + "Git diff: "
-                    + git_diff.stdout.decode(),
+                    + git_diff.stdout,
                     temperature=1.0,
                 )
                 commit_with_message_from_ai = input(
                     "Закоммитить с сообщением "
-                    f"{COLOR_YELLOW}'{commit_message}'{COLOR_RESET}? [y/N/r]: "
+                    + colored(f"'{commit_message}'", "yellow")
+                    + "? [y/N/r]: "
                 )
                 if commit_with_message_from_ai != "r":
                     retry = False
                     break
             if commit_with_message_from_ai == "y":
                 subprocess.run(["git", "commit", "-m", f"{commit_message}"])
-                print(f"{COLOR_GREEN}Коммит успешно создан!{COLOR_RESET}")
+                print(colored("Коммит успешно создан!", "green"))
 
         # Если нет
         else:
             init_git_repo = (
                 True
                 if input(
-                    "Не инициализирован git репозиторий! "
-                    f"Выполнить {COLOR_YELLOW}'git init'{COLOR_RESET}? [y/N]: "
+                    "Не инициализирован git репозиторий! Выполнить "
+                    + colored("'git init'", "yellow")
+                    + "? [y/N]: "
                 )
                 == "y"
                 else False
@@ -341,13 +447,14 @@ def main() -> None:
                     )
                     if input(
                         "Сделать первый коммит с сообщением "
-                        f"{COLOR_YELLOW}'Initial commit?'{COLOR_RESET} [y/N]: "
+                        + colored("'Initial commit?'", "yellow")
+                        + " [y/N]: "
                     )
                     == "y"
                     else None
                 )
     except Exception as e:
-        print(f"{COLOR_RED}Ошибка:{COLOR_RESET} {e}")
+        print(colored("Ошибка:", "red") + " " + str(e))
 
 
 if __name__ == "__main__":
