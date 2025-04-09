@@ -1,6 +1,7 @@
 # CLI-утилита, которая будет создавать сообщение для коммита на основе ИИ.
 # noqa: F841
 
+import argparse
 import json
 import os
 import subprocess
@@ -10,18 +11,46 @@ import urllib.request
 # Константы
 
 mistral_api_key = os.environ["MISTRAL_API_KEY"]
-prompt_for_ai = """Привет! Ты составитель коммитов для git.
-Сгенерируй коммит-месседж на русском языке, который:
-1. Точно отражает суть изменений
-2. Не превышает 50 слов
-Опирайся на данные от 'git status' и 'git diff'.
-В ответ на это сообщение тебе нужно предоставить
-ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
 # Для цветных логов
 COLOR_RED = "\033[31m"
 COLOR_GREEN = "\033[32m"
 COLOR_YELLOW = "\033[33m"
 COLOR_RESET = "\033[0m"
+# Парсер параметров
+parser = argparse.ArgumentParser(
+    prog="Commit Maker",
+    usage="commit_maker [OPTION] [VALUE]",
+    description="CLI-утилита, которая будет создавать сообщение"
+    "для коммита на основе ИИ.",
+)
+parser.add_argument(
+    "--local-models",
+    "-l",
+    action="store_true",
+    default=False,
+    help="Использовать локальные модели или нет",
+)
+parser.add_argument(
+    "--max-symbols",
+    "-m",
+    type=int,
+    default=150,
+    metavar="[max_symbols]",
+    help="Длина сообщения коммита. Defaults to 150",
+)
+# Парсинг аргументов
+use_local_models = parser.parse_args().local_models
+max_symbols = parser.parse_args().max_symbols
+
+
+# Промпт для ИИ
+prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
+Сгенерируй коммит-месседж на русском языке, который:
+1. Точно отражает суть изменений
+2. Не превышает {max_symbols} символов
+Опирайся на данные от 'git status' и 'git diff'.
+В ответ на это сообщение тебе нужно предоставить
+ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
 
 
 # Класс для использования API Mistral AI
@@ -62,12 +91,12 @@ class MistralAI:
         Returns:
             str: Json-ответ/Err
         """
-        self.data["messages"].append(
+        self.data["messages"] = [
             {
                 "role": role,
                 "content": message,
             }
-        )
+        ]
         post_data = json.dumps(self.data).encode("utf-8")
         request = urllib.request.Request(
             url=self.url,
@@ -89,17 +118,100 @@ class MistralAI:
             print(f"Ответ сервера: {e.read().decode()}")
 
 
+# Класс для использования API Ollama
+class Ollama:
+    """Класс для общения с локальными моделями Ollama.
+    Написан с помощью urllib."""
+
+    def __init__(
+        self,
+        model: str,
+    ):
+        """Инициализация класса"""
+        self.model = model
+        self.url = "http://localhost:11434/api/chat"
+        self.headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+
+    def message(
+        self,
+        message: str,
+        temperature: float = 0.7,
+        role: str = "user",
+    ) -> str:
+        """Функция сообщения
+
+        Args:
+            message (str): Сообщение
+            model (str): Модель, с которой будем общаться
+            temperature (float, optional): Температура общения. Defaults to 0.7
+            role (str, optional): Роль в сообщении.
+
+        Returns:
+            str: Json-ответ/Err
+        """
+        self.data = {
+            "model": self.model,
+            "messages": [
+                {
+                    "role": role,
+                    "content": message,
+                }
+            ],
+            "options": {
+                "temperature": temperature,
+            },
+            "stream": False,
+        }
+        post_data = json.dumps(self.data).encode("utf-8")
+        request = urllib.request.Request(
+            url=self.url,
+            data=post_data,
+            headers=self.headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request) as response:
+                if response.status == 200:
+                    response_data = json.loads(response.read().decode())
+                    return response_data["message"]["content"]
+                else:
+                    print(f"Ошибка: {response.status}")
+        except urllib.error.URLError as e:
+            print(f"Ошибка URL: {e.reason}")
+        except urllib.error.HTTPError as e:
+            print(f"Ошибка HTTP: {e.code} {e.reason}")
+            print(f"Ответ сервера: {e.read().decode()}")
+
+
 # main функция
 
 
 def main() -> None:
-    global mistral_api_key, prompt_for_ai
+    global mistral_api_key, prompt_for_ai, use_local_models
     try:
         # Получаем версию git, если он есть
         git_version = subprocess.run(  # noqa
             ["git", "--version"],
             capture_output=True,
         ).stdout.decode()
+
+        # Получаем версию Ollama, если есть
+        ollama_version = subprocess.run(
+            ["ollama", "-v"],
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+        # Обработка отсутствия ollama
+        if not ollama_version and use_local_models:
+            print(
+                f"{COLOR_YELLOW}Ollama не установлена!{COLOR_RESET} "
+                "Для установки перейдите по https://ollama.com/download"
+            )
+            return None
 
         # Проверяем, есть ли .git
         dot_git = ".git" in os.listdir("./")
@@ -168,9 +280,12 @@ def main() -> None:
                     f"C{COLOR_RESET} и выполните {COLOR_YELLOW}'git add "
                     f"<filename>'{COLOR_RESET}."
                 )
-            client = MistralAI(
-                api_key=mistral_api_key,
-            )
+            if use_local_models:
+                client = Ollama(model="gemma3:12b")
+            else:
+                client = MistralAI(
+                    api_key=mistral_api_key,
+                )
             retry = True
             while retry:
                 commit_message = client.message(
