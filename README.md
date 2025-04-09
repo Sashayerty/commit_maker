@@ -1,8 +1,8 @@
-# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-blue)]()
+# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-purple)](https://docs.astral.sh/uv/) [![Created with ollama](https://img.shields.io/badge/Created_with-ollama-white)](https://ollama.com/)
 
 ## Все коммиты в репозитории - результат работы программы
 
-Эта CLI-утилита автоматически создает осмысленные сообщения для git-коммитов, используя Mistral AI на основе вывода команд `git status` и `git diff`. Реализована в виде одного файла для удобства перевода в исполняемый файл.
+Эта CLI-утилита автоматически создает осмысленные сообщения для git-коммитов, используя локальные модели через ollama/Mistral AI API на основе вывода команд `git status` и `git diff`. Реализована в виде одного файла для удобства перевода в исполняемый файл.
 
 ## Возможности
 

@@ -131,6 +131,7 @@ class MistralAI:
         try:
             with urllib.request.urlopen(request) as response:
                 if response.status == 200:
+                    print(response.read())
                     response_data = json.loads(response.read().decode())
                     return response_data["choices"][0]["message"]["content"]
                 else:
@@ -225,7 +226,8 @@ def main() -> None:
         git_version = subprocess.run(  # noqa
             ["git", "--version"],
             capture_output=True,
-        ).stdout.decode()
+            text=True,
+        ).stdout
 
         # Получаем версию Ollama, если есть
         ollama_list_of_models = (
