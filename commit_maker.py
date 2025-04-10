@@ -131,7 +131,6 @@ class MistralAI:
         try:
             with urllib.request.urlopen(request) as response:
                 if response.status == 200:
-                    print(response.read())
                     response_data = json.loads(response.read().decode())
                     return response_data["choices"][0]["message"]["content"]
                 else:
@@ -212,6 +211,19 @@ class Ollama:
 
 
 def colored(string: str, color: str) -> str:
+    """Функция для 'окраски' строк для красивого вывода
+
+    Args:
+        string (str): Строка, которую нужно покрасить
+        color (str): Цвет покраски ['red', 'yellow', 'green', 'reset']
+
+    Returns:
+        str: Покрашенная строка
+
+    Example:
+        `print(colored(string='Success!', color='green'))` # Выводит 'Success!'
+        зеленого цвета
+    """
     global COLORS_DICT
     return f"{COLORS_DICT[color]}{string}{COLORS_DICT["reset"]}"
 
@@ -239,11 +251,16 @@ def main() -> None:
             .stdout.strip()
             .split("\n")
         )
+        ollama_list_of_models = [
+            i.split()[0] for i in ollama_list_of_models[1:]
+        ]
 
         # Обработка отсутствия ollama
         if not ollama_list_of_models and use_local_models:
             print(
-                colored("Ollama не установлена!", "yellow")
+                colored(
+                    "Ollama не установлена или список моделей пуст!", "yellow"
+                )
                 + " Для установки перейдите по https://ollama.com/download"
             )
             return None
@@ -256,9 +273,6 @@ def main() -> None:
             )
             return None
         elif ollama_list_of_models and use_local_models:
-            ollama_list_of_models = [
-                i.split()[0] for i in ollama_list_of_models[1:]
-            ]
             if not model:
                 if len(ollama_list_of_models) > 1:
                     print(
