@@ -225,7 +225,7 @@ def colored(string: str, color: str) -> str:
         зеленого цвета
     """
     global COLORS_DICT
-    return f"{COLORS_DICT[color]}{string}{COLORS_DICT["reset"]}"
+    return f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}"
 
 
 # main функция
