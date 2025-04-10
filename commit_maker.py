@@ -433,7 +433,8 @@ def main() -> None:
             init_git_repo = (
                 True
                 if input(
-                    "Не инициализирован git репозиторий! Выполнить "
+                    colored("Не инициализирован git репозиторий!", "red")
+                    + " Выполнить "
                     + colored("'git init'", "yellow")
                     + "? [y/N]: "
                 )
