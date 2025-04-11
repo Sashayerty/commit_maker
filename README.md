@@ -81,7 +81,7 @@ pip3 install commit_maker
 ### Windows
 
    ```cmd
-   commit_maker.exe [OPTION] [VALUE]
+   commit_maker [OPTION] [VALUE]
    ```
 
 ### Linux/MacOS
