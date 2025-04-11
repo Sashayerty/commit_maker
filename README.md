@@ -43,9 +43,9 @@
 
 ```bash
 # Windows
-pip install git+https://github.com/sashayerty/commit_maker
+pip install commit_maker
 # Linux/MacOS
-pip3 install git+https://github.com/sashayerty/commit_maker
+pip3 install commit_maker
 ```
 
 ## Настройка переменных окружения
