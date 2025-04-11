@@ -69,10 +69,11 @@ parser.add_argument(
 )
 
 # Парсинг аргументов
-use_local_models = parser.parse_args().local_models
-max_symbols = parser.parse_args().max_symbols
-model = parser.parse_args().model
-dry_run = parser.parse_args().dry_run
+parsed_args = parser.parse_args()
+use_local_models = parsed_args.local_models
+max_symbols = parsed_args.max_symbols
+model = parsed_args.model
+dry_run = parsed_args.dry_run
 
 # Промпт для ИИ
 prompt_for_ai = f"""Привет! Ты составитель коммитов для git.

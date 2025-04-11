@@ -1,7 +1,18 @@
 [project]
 name = "commit-maker"
 version = "0.1.0"
-description = "Add your description here"
+authors = [
+  { name="Alex Bulgakov", email="sashayerty@ya.ru" }
+]
+description = "CLI-утилита для генерации git-коммитов с помощью ИИ"
 readme = "README.md"
+license = { text = "MIT" }
 requires-python = ">=3.13"
 dependencies = []
+
+[project.scripts]
+commit-maker = "commit_maker.main:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
