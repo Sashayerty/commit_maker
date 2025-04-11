@@ -1,4 +1,4 @@
-# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-purple)](https://docs.astral.sh/uv/) [![Created with ollama](https://img.shields.io/badge/Created_with-ollama-white)](https://ollama.com/)
+# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-purple)](https://docs.astral.sh/uv/) [![Created with ollama](https://img.shields.io/badge/Created_with-ollama-white)](https://ollama.com/) [![PyPi](https://img.shields.io/badge/Available_on-pypi-orange)](https://pypi.org/project/commit-maker/)
 
 ![Демонстрация](./commit_maker.svg)
 
@@ -77,14 +77,6 @@ pip3 install commit_maker
    ```
 
 ## Использование
-
-### Windows
-
-   ```cmd
-   commit_maker [OPTION] [VALUE]
-   ```
-
-### Linux/MacOS
 
    ```bash
    commit_maker [OPTION] [VALUE]
