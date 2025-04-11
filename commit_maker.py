@@ -15,11 +15,17 @@ mistral_api_key = os.environ["MISTRAL_API_KEY"]
 COLOR_RED = "\033[31m"
 COLOR_GREEN = "\033[32m"
 COLOR_YELLOW = "\033[33m"
+COLOR_BLUE = "\033[94m"
+COLOR_MAGENTA = "\033[95m"
+COLOR_CYAN = "\033[96m"
 COLOR_RESET = "\033[0m"
 COLORS_DICT = {
     "red": COLOR_RED,
     "green": COLOR_GREEN,
     "yellow": COLOR_YELLOW,
+    "blue": COLOR_BLUE,
+    "magenta": COLOR_MAGENTA,
+    "cyan": COLOR_CYAN,
     "reset": COLOR_RESET,
 }
 
@@ -211,12 +217,31 @@ class Ollama:
             print(f"Ответ сервера: {e.read().decode()}")
 
 
-def colored(string: str, color: str) -> str:
+def bold(text: str) -> str:
+    """Возвращает жирный текст
+
+    Args:
+        text (str): Текст
+
+    Returns:
+        str: Жирный текст
+    """
+    bold_start = "\033[1m"
+    bold_end = "\033[0m"
+    return f"{bold_start}{text}{bold_end}"
+
+
+def colored(
+    string: str,
+    color: str,
+    text_bold: bool = True,
+) -> str:
     """Функция для 'окраски' строк для красивого вывода
 
     Args:
         string (str): Строка, которую нужно покрасить
         color (str): Цвет покраски ['red', 'yellow', 'green', 'reset']
+        text_bold (bool, optional): Жирный текст или нет. Defaults to True.
 
     Returns:
         str: Покрашенная строка
@@ -226,14 +251,18 @@ def colored(string: str, color: str) -> str:
         зеленого цвета
     """
     global COLORS_DICT
-    return f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}"
+    return (
+        bold(f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}")
+        if text_bold
+        else f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}"
+    )
 
 
 # main функция
 
 
 def main() -> None:
-    global mistral_api_key, prompt_for_ai, use_local_models, model
+    global mistral_api_key, prompt_for_ai, use_local_models, model, dry_run
     try:
         # Получаем версию git, если он есть
         git_version = subprocess.run(  # noqa
@@ -242,7 +271,7 @@ def main() -> None:
             text=True,
         ).stdout
 
-        # Получаем версию Ollama, если есть
+        # Получаем список моделей из Ollama, если Ollama есть
         ollama_list_of_models = (
             subprocess.run(
                 ["ollama", "ls"],
@@ -360,24 +389,32 @@ def main() -> None:
                 print(colored("Нет добавленных изменений!", "red"))
                 return None
             if not git_diff.stdout:
-                if (
-                    input(
-                        colored("Нет застейдженных изменений!", "red")
-                        + " Добавить всё автоматически с помощью "
-                        + colored("'git add -A'", "yellow")
-                        + "? [y/N]: "
-                    )
-                    == "y"
-                ):
-                    subprocess.run(
-                        ["git", "add", "-A"],
-                        capture_output=True,
-                    )
+                if not dry_run:
+                    if (
+                        input(
+                            colored("Нет застейдженных изменений!", "red")
+                            + " Добавить всё автоматически с помощью "
+                            + colored("git add -A", "yellow")
+                            + "? [y/N]: "
+                        )
+                        == "y"
+                    ):
+                        subprocess.run(
+                            ["git", "add", "-A"],
+                            capture_output=True,
+                        )
+                    else:
+                        print(
+                            colored(
+                                "Добавьте необходимые файлы вручную.", "yellow"
+                            )
+                        )
+                        return None
                 else:
                     print(
-                        colored(
-                            "Добавьте необходимые файлы вручную.", "yellow"
-                        )
+                        colored("Нечего коммитить!", "red")
+                        + " Добавьте необходимые файлы с помощью "
+                        + colored("git add <filename>", "yellow")
                     )
                     return None
                 git_diff = subprocess.run(
@@ -398,7 +435,7 @@ def main() -> None:
                     + " Для добавления дополнительных файлов "
                     + colored("Ctrl + C", "yellow")
                     + " и выполните "
-                    + colored("'git add <filename>'", "yellow")
+                    + colored("git add <filename>", "yellow")
                     + "."
                 )
             if use_local_models:
@@ -407,8 +444,31 @@ def main() -> None:
                 client = MistralAI(
                     api_key=mistral_api_key,
                 )
-            retry = True
-            while retry:
+            if not dry_run:
+                retry = True
+                while retry:
+                    commit_message = client.message(
+                        message=prompt_for_ai
+                        + "Git status: "
+                        + git_status.stdout
+                        + "Git diff: "
+                        + git_diff.stdout,
+                        temperature=1.0,
+                    )
+                    commit_with_message_from_ai = input(
+                        "Закоммитить с сообщением "
+                        + colored(f"'{commit_message}'", "yellow")
+                        + "? [y/N/r]: "
+                    )
+                    if commit_with_message_from_ai != "r":
+                        retry = False
+                        break
+                if commit_with_message_from_ai == "y":
+                    subprocess.run(
+                        ["git", "commit", "-m", f"{commit_message}"]
+                    )
+                    print(colored("Коммит успешно создан!", "green"))
+            else:
                 commit_message = client.message(
                     message=prompt_for_ai
                     + "Git status: "
@@ -417,17 +477,19 @@ def main() -> None:
                     + git_diff.stdout,
                     temperature=1.0,
                 )
-                commit_with_message_from_ai = input(
-                    "Закоммитить с сообщением "
-                    + colored(f"'{commit_message}'", "yellow")
-                    + "? [y/N/r]: "
+                print(
+                    colored(
+                        "Коммит-месседж успешно сгенерирован:", "green", False
+                    )
                 )
-                if commit_with_message_from_ai != "r":
-                    retry = False
-                    break
-            if commit_with_message_from_ai == "y":
-                subprocess.run(["git", "commit", "-m", f"{commit_message}"])
-                print(colored("Коммит успешно создан!", "green"))
+                print(
+                    colored(
+                        commit_message,
+                        "yellow",
+                        False,
+                    )
+                )
+                return None
 
         # Если нет
         else:
@@ -436,7 +498,7 @@ def main() -> None:
                 if input(
                     colored("Не инициализирован git репозиторий!", "red")
                     + " Выполнить "
-                    + colored("'git init'", "yellow")
+                    + colored("git init", "yellow")
                     + "? [y/N]: "
                 )
                 == "y"
