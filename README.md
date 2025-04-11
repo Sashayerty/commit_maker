@@ -15,9 +15,8 @@
    - [Windows](#windows)
    - [Linux/MacOS](#linuxmacos)
 5. [Использование](#использование)
-6. [Создание исполняемого файла](#создание-исполняемого-файла-с-помощью-pyinstaller)
-7. [Примечания](#примечания)
-8. [Лицензия](#лицензия)
+6. [Примечания](#примечания)
+7. [Лицензия](#лицензия)
 
 ## Возможности
 
@@ -43,8 +42,10 @@
 ## Установка
 
 ```bash
-git clone https://github.com/Sashayerty/commit_maker
-cd ./commit_maker
+# Windows
+pip install git+https://github.com/sashayerty/commit_maker
+# Linux/MacOS
+pip3 install git+https://github.com/sashayerty/commit_maker
 ```
 
 ## Настройка переменных окружения
@@ -75,67 +76,20 @@ cd ./commit_maker
    source ~/.bashrc  # или другой файл, который вы редактировали
    ```
 
-## Использование
-
-1. Перейдите в папку с склонированным Git-репозиторием
-2. Запустите скрипт:
-
-   ```bash
-   # Windows
-   python commit_maker.py
-   # Linux/MacOS
-   python3 commit_maker.py
-   ```
-
-3. Следуйте интерактивным подсказкам:
-   - Для существующих репозиториев: проверьте и подтвердите сгенерированное ИИ сообщение коммита
-   - Для новых репозиториев: выберите, нужно ли инициализировать Git-репозиторий и сделать начальный коммит
-
-## Создание исполняемого файла с помощью pyinstaller
-
-### Общая часть для Windows/Linux/MacOS
-
-1. Устанавливаем pyinstaller:
-
-   ```bash
-   # pip Linux/MacOS
-   pip3 install pyinstaller
-   # pip Windows
-   pip install pyinstaller
-   # uv Windows/Linux/MacOS
-   uv add pyinstaller
-   ```
-
-2. Выполняем:
-
-   ```bash
-   # pip
-   pyinstaller --onefile commit_maker.py
-   # uv 
-   uv run pyinstaller --onefile commit_maker.py
-   ```
-
-### Linux/MacOS
-
-3. Создается 2 директории: `./dist` и `./build`, нам нужна `./dist`, там лежит `commit_maker`
-4. Перемещаем файл в папку с исполняемыми бинарниками:
-
-   ```bash
-   sudo mv ./dist/commit_maker /usr/bin # После этого все готово к работе!
-   ```
-
-### Windows
-
-3. Создается 2 директории: `./dist` и `./build`, нам нужна `./dist`, там лежит `commit_maker.exe`
-4. Создаем папку `commit_maker` в `C:/Program Files/`. Далее копируем файл `commit_maker.exe` из `./dist` и перемещаем в  `C:/Users/User/Program Files/commit_maker`. Далее открываем Панель управления -> Система и безопасность -> Система -> Дополнительные параметры системы -> Переменные среды -> Path(в системных переменных)(двойной клик) -> Создать. Добавляем `C:/Program Files/commit_maker`. После вышеописанных действий, у Вас в консоли должно все заработать. 
-
-### Использование:
+## Использование:
 
    ```bash
    commit_maker [OPTION] [VALUE]
    ```
 
 ### Пример использования:
+
+**`-h`**, **`--help`** - вывод помощи
+**`-l`**, **`--local-models`** - использование локальных моделей  
+**`-m`**, **`--max-symbols`** - ограничение длины сообщения коммита  
+**`-M`**, **`--model`** - какую локальную модель использовать (при **`-l`**)  
+**`-d`**, **`--dry-run`** - вывод сообщения на основе зайстейдженных изменений, без создания коммита  
+
 
    ```bash
    commit_maker -l -m 300 -M qwen2.5:14b # Используем локальные модели, ограничение длины сообщения коммита 300 символов, используем qwen2.5:14b

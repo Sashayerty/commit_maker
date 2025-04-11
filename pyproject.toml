@@ -1,5 +1,5 @@
 [project]
-name = "commit-maker"
+name = "commit_maker"
 version = "0.1.0"
 authors = [
   { name="Alex Bulgakov", email="sashayerty@ya.ru" }
@@ -11,7 +11,7 @@ requires-python = ">=3.13"
 dependencies = []
 
 [project.scripts]
-commit-maker = "commit_maker.main:main"
+commit_maker = "commit_maker.main:main"
 
 [build-system]
 requires = ["setuptools>=61.0"]
