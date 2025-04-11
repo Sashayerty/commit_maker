@@ -270,6 +270,7 @@ def main() -> None:
             ["git", "--version"],
             capture_output=True,
             text=True,
+            encoding="utf-8",
         ).stdout
 
         # Получаем список моделей из Ollama, если Ollama есть
@@ -278,6 +279,7 @@ def main() -> None:
                 ["ollama", "ls"],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
             .stdout.strip()
             .split("\n")
@@ -364,18 +366,21 @@ def main() -> None:
                 ["git", "status", "-v"],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
 
             new_files = subprocess.run(
                 ["git", "ls-files", "--others", "--exclude-standard"],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
 
             git_diff = subprocess.run(
                 ["git", "diff", "--staged"],
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
             )
             if (
                 (not new_files.stdout)
@@ -384,6 +389,7 @@ def main() -> None:
                     not subprocess.run(
                         ["git", "diff"],
                         capture_output=True,
+                        encoding="utf-8",
                     ).stdout
                 )
             ):  # Проверка на отсутствие каких-либо изменений
@@ -403,6 +409,7 @@ def main() -> None:
                         subprocess.run(
                             ["git", "add", "-A"],
                             capture_output=True,
+                            encoding="utf-8",
                         )
                     else:
                         print(
@@ -422,10 +429,12 @@ def main() -> None:
                     ["git", "diff", "--staged"],
                     capture_output=True,
                     text=True,
+                    encoding="utf-8",
                 )
             if subprocess.run(
                 ["git", "diff"],
                 capture_output=True,
+                encoding="utf-8",
             ).stdout:
                 print(
                     colored(
@@ -466,7 +475,8 @@ def main() -> None:
                         break
                 if commit_with_message_from_ai == "y":
                     subprocess.run(
-                        ["git", "commit", "-m", f"{commit_message}"]
+                        ["git", "commit", "-m", f"{commit_message}"],
+                        encoding="utf-8",
                     )
                     print(colored("Коммит успешно создан!", "green"))
             else:
@@ -509,6 +519,7 @@ def main() -> None:
                 subprocess.run(
                     ["git", "init"],
                     capture_output=True,
+                    encoding="utf-8",
                 )
 
                 (
@@ -516,6 +527,7 @@ def main() -> None:
                         subprocess.run(
                             ["git", "add", "-A"],
                             capture_output=True,
+                            encoding="utf-8",
                         ),
                         subprocess.run(
                             [
@@ -523,7 +535,8 @@ def main() -> None:
                                 "commit",
                                 "-m",
                                 "'Initial commit'",
-                            ]
+                            ],
+                            encoding="utf-8",
                         ),
                     )
                     if input(
