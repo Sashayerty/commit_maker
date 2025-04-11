@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="commit_maker",
-    version="0.1.0",
+    version="0.1.1",
     author="Alex Bulgakov",
     author_email="sashayerty@ya.ru",
     description="CLI-утилита для генерации git-коммитов с помощью ИИ",
