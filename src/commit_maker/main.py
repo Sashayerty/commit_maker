@@ -38,30 +38,30 @@ parser = argparse.ArgumentParser(
     "API. Локальные модели используют ollama.",
 )
 parser.add_argument(
-    "--local-models",
     "-l",
+    "--local-models",
     action="store_true",
     default=False,
-    help="Использовать локальные модели или нет",
+    help="Запуск с использованием локальных моделей",
 )
 parser.add_argument(
-    "--max-symbols",
     "-m",
+    "--max-symbols",
     type=int,
     default=250,
     metavar="[max_symbols]",
     help="Длина сообщения коммита. Defaults to 150",
 )
 parser.add_argument(
-    "--model",
     "-M",
+    "--model",
     type=str,
     metavar="[model]",
     help="Модель, которую ollama будет использовать.",
 )
 parser.add_argument(
-    "--dry-run",
     "-d",
+    "--dry-run",
     action="store_true",
     default=False,
     help="Запуск с выводом сообщения на основе зайстейдженных "
@@ -241,7 +241,8 @@ def colored(
 
     Args:
         string (str): Строка, которую нужно покрасить
-        color (str): Цвет покраски ['red', 'yellow', 'green', 'reset']
+        color (str): Цвет покраски ['red', 'yellow', 'green', 'magenta',\
+            'blue', 'cyan', 'reset']
         text_bold (bool, optional): Жирный текст или нет. Defaults to True.
 
     Returns:
@@ -317,7 +318,7 @@ def main() -> None:
                         + "\n"
                         + "\n".join(
                             [
-                                f"{i + 1}. {model}"
+                                f"{i + 1}. {colored(model, "magenta", False,)}"
                                 for i, model in enumerate(
                                     ollama_list_of_models
                                 )
