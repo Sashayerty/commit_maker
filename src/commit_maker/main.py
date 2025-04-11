@@ -318,7 +318,7 @@ def main() -> None:
                         + "\n"
                         + "\n".join(
                             [
-                                f"{i + 1}. {colored(model, "magenta", False,)}"
+                                f"{i + 1}. {colored(model, 'magenta', False,)}"
                                 for i, model in enumerate(
                                     ollama_list_of_models
                                 )
