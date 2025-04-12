@@ -2,11 +2,11 @@
 # noqa: F841
 
 import argparse
-import json
 import os
 import subprocess
-import urllib
-import urllib.request
+from importlib.metadata import version
+
+import requests
 
 # Константы
 mistral_api_key = os.environ.get("MISTRAL_API_KEY")
@@ -58,6 +58,11 @@ parser.add_argument(
         Находится на отрезке [0.0, 1.5]. Defaults to 1.0",
     metavar="[temperature]",
 )
+parser.add_argument(
+    "--version",
+    action="version",
+    version=f"%(prog)s {version('commit-maker')}",
+)
 
 
 # Класс для использования API Mistral AI
@@ -77,11 +82,6 @@ class MistralAI:
             "Accept": "application/json",
             "Authorization": f"Bearer {api_key}",
         }
-        self.data = {
-            "model": "mistral-small-latest",
-            "messages": [],
-            "temperature": 0.7,
-        }
 
     def message(
         self,
@@ -98,31 +98,29 @@ class MistralAI:
         Returns:
             str: Json-ответ/Err
         """
-        self.data["messages"] = [
-            {
-                "role": role,
-                "content": message,
-            }
-        ]
-        post_data = json.dumps(self.data).encode("utf-8")
-        request = urllib.request.Request(
-            url=self.url,
-            data=post_data,
-            headers=self.headers,
-            method="POST",
-        )
+        data = {
+            "model": "mistral-small-latest",
+            "messages": [
+                {
+                    "role": role,
+                    "content": message,
+                }
+            ],
+            "temperature": 0.7,
+        }
         try:
-            with urllib.request.urlopen(request) as response:
-                if response.status == 200:
-                    response_data = json.loads(response.read().decode())
-                    return response_data["choices"][0]["message"]["content"]
-                else:
-                    print(f"Ошибка: {response.status}")
-        except urllib.error.URLError as e:
-            print(f"Ошибка URL: {e.reason}")
-        except urllib.error.HTTPError as e:
-            print(f"Ошибка HTTP: {e.code} {e.reason}")
-            print(f"Ответ сервера: {e.read().decode()}")
+            response = requests.post(
+                url=self.url,
+                json=data,
+                headers=self.headers,
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"]
+
+        except requests.exceptions.RequestException as e:
+            print(colored(f"Ошибка при обращении к Mistral AI: {e}", "red"))
+        except KeyError:
+            print(colored("Ошибка парсинга ответа от Mistral AI", "red"))
 
 
 # Класс для использования API Ollama
@@ -159,7 +157,7 @@ class Ollama:
         Returns:
             str: Json-ответ/Err
         """
-        self.data = {
+        data = {
             "model": self.model,
             "messages": [
                 {
@@ -172,25 +170,20 @@ class Ollama:
             },
             "stream": False,
         }
-        post_data = json.dumps(self.data).encode("utf-8")
-        request = urllib.request.Request(
-            url=self.url,
-            data=post_data,
-            headers=self.headers,
-            method="POST",
-        )
+
         try:
-            with urllib.request.urlopen(request) as response:
-                if response.status == 200:
-                    response_data = json.loads(response.read().decode())
-                    return response_data["message"]["content"]
-                else:
-                    print(f"Ошибка: {response.status}")
-        except urllib.error.URLError as e:
-            print(f"Ошибка URL: {e.reason}")
-        except urllib.error.HTTPError as e:
-            print(f"Ошибка HTTP: {e.code} {e.reason}")
-            print(f"Ответ сервера: {e.read().decode()}")
+            response = requests.post(
+                url=self.url,
+                json=data,
+                headers=self.headers,
+            )
+            response.raise_for_status()  # выбросит ошибку при плохом статусе
+            return response.json()["choices"][0]["message"]["content"]
+
+        except requests.exceptions.RequestException as e:
+            print(colored(f"Ошибка при обращении к Ollama: {e}", "red"))
+        except KeyError:
+            print(colored("Ошибка парсинга ответа от Ollama", "red"))
 
 
 def bold(text: str) -> str:
