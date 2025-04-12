@@ -106,6 +106,9 @@ wheels = [
 name = "commit-maker"
 version = "0.2.1"
 source = { editable = "." }
+dependencies = [
+    { name = "requests" },
+]
 
 [package.dev-dependencies]
 requests-ver = [
@@ -113,6 +116,7 @@ requests-ver = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "requests", specifier = ">=2.32.3" }]
 
 [package.metadata.requires-dev]
 requests-ver = [{ name = "requests", specifier = ">=2.32.3" }]
