@@ -286,20 +286,23 @@ def main() -> None:
             encoding="utf-8",
         ).stdout
 
-        # Получаем список моделей из Ollama, если Ollama есть
-        ollama_list_of_models = (
-            subprocess.run(
-                ["ollama", "ls"],
-                capture_output=True,
-                text=True,
-                encoding="utf-8",
+        if use_local_models:
+            # Получаем список моделей из Ollama, если Ollama есть
+            ollama_list_of_models = (
+                subprocess.run(
+                    ["ollama", "ls"],
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                )
+                .stdout.strip()
+                .split("\n")
             )
-            .stdout.strip()
-            .split("\n")
-        )
-        ollama_list_of_models = [
-            i.split()[0] for i in ollama_list_of_models[1:]
-        ]
+            ollama_list_of_models = [
+                i.split()[0] for i in ollama_list_of_models[1:]
+            ]
+        else:
+            ollama_list_of_models = 0
 
         # Обработка отсутствия ollama
         if not ollama_list_of_models and use_local_models:
@@ -556,6 +559,12 @@ def main() -> None:
                     == "y"
                     else None
                 )
+    except FileNotFoundError as e:
+        print(
+            colored("Ollama не установлена!", "red")
+            if "ollama" in str(e)
+            else colored(str(e), "red")
+        )
     except Exception as e:
         print(colored("Ошибка:", "red") + " " + str(e))
 
