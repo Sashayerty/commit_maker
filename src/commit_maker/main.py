@@ -67,7 +67,8 @@ parser.add_argument(
 
 # Класс для использования API Mistral AI
 class MistralAI:
-    """Класс для общения с MistralAI. Написан с помощью urllib."""
+    """Класс для общения с MistralAI.
+    Написан с помощью requests."""
 
     def __init__(self, api_key: str):
         """Инициализация класса
@@ -113,6 +114,7 @@ class MistralAI:
                 url=self.url,
                 json=data,
                 headers=self.headers,
+                timeout=60,
             )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
@@ -126,7 +128,7 @@ class MistralAI:
 # Класс для использования API Ollama
 class Ollama:
     """Класс для общения с локальными моделями Ollama.
-    Написан с помощью urllib."""
+    Написан с помощью requests."""
 
     def __init__(
         self,
@@ -176,6 +178,7 @@ class Ollama:
                 url=self.url,
                 json=data,
                 headers=self.headers,
+                timeout=60,
             )
             response.raise_for_status()  # выбросит ошибку при плохом статусе
             return response.json()["choices"][0]["message"]["content"]
