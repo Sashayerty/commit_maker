@@ -1,8 +1,8 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="commit_maker",
-    version="0.1.2",
+    name="commit-maker",
+    version="0.2.0",
     author="Alex Bulgakov",
     author_email="sashayerty@ya.ru",
     description="CLI-утилита для генерации git-коммитов с помощью ИИ",
@@ -24,4 +24,5 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
+    url="https://github.com/Sashayerty/commit_maker",
 )

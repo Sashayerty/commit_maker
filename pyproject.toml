@@ -1,6 +1,6 @@
 [project]
-name = "commit_maker"
-version = "0.1.2"
+name = "commit-maker"
+version = "0.2.0"
 authors = [
   { name="Alex Bulgakov", email="sashayerty@ya.ru" }
 ]
@@ -12,3 +12,6 @@ dependencies = []
 
 [project.scripts]
 commit_maker = "commit_maker.main:main"
+
+[project.urls]
+Homepage = "https://github.com/sashayerty/commit_maker"

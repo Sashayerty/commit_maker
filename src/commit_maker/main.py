@@ -9,25 +9,7 @@ import urllib
 import urllib.request
 
 # Константы
-mistral_api_key = os.environ["MISTRAL_API_KEY"]
-
-# Для цветных логов
-COLOR_RED = "\033[31m"
-COLOR_GREEN = "\033[32m"
-COLOR_YELLOW = "\033[33m"
-COLOR_BLUE = "\033[94m"
-COLOR_MAGENTA = "\033[95m"
-COLOR_CYAN = "\033[96m"
-COLOR_RESET = "\033[0m"
-COLORS_DICT = {
-    "red": COLOR_RED,
-    "green": COLOR_GREEN,
-    "yellow": COLOR_YELLOW,
-    "blue": COLOR_BLUE,
-    "magenta": COLOR_MAGENTA,
-    "cyan": COLOR_CYAN,
-    "reset": COLOR_RESET,
-}
+mistral_api_key = os.environ.get("MISTRAL_API_KEY")
 
 # Парсер параметров
 parser = argparse.ArgumentParser(
@@ -48,9 +30,9 @@ parser.add_argument(
     "-m",
     "--max-symbols",
     type=int,
-    default=250,
+    default=200,
     metavar="[max_symbols]",
-    help="Длина сообщения коммита. Defaults to 150",
+    help="Длина сообщения коммита. Defaults to 200",
 )
 parser.add_argument(
     "-M",
@@ -67,22 +49,15 @@ parser.add_argument(
     help="Запуск с выводом сообщения на основе зайстейдженных "
     "изменений, без создания коммита",
 )
-
-# Парсинг аргументов
-parsed_args = parser.parse_args()
-use_local_models = parsed_args.local_models
-max_symbols = parsed_args.max_symbols
-model = parsed_args.model
-dry_run = parsed_args.dry_run
-
-# Промпт для ИИ
-prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
-Сгенерируй коммит-месседж на РУССКОМ языке, который:
-1. Точно отражает суть изменений
-2. Не превышает {max_symbols} символов
-Опирайся на данные от 'git status' и 'git diff'.
-В ответ на это сообщение тебе нужно предоставить
-ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
+parser.add_argument(
+    "-t",
+    "--temperature",
+    default=1.0,
+    type=float,
+    help="Температура модели при создании месседжа.\
+        Находится на отрезке [0.0, 1.5]. Defaults to 1.0",
+    metavar="[temperature]",
+)
 
 
 # Класс для использования API Mistral AI
@@ -252,7 +227,22 @@ def colored(
         `print(colored(string='Success!', color='green'))` # Выводит 'Success!'
         зеленого цвета
     """
-    global COLORS_DICT
+    COLOR_RED = "\033[31m"
+    COLOR_GREEN = "\033[32m"
+    COLOR_YELLOW = "\033[33m"
+    COLOR_BLUE = "\033[94m"
+    COLOR_MAGENTA = "\033[95m"
+    COLOR_CYAN = "\033[96m"
+    COLOR_RESET = "\033[0m"
+    COLORS_DICT = {
+        "red": COLOR_RED,
+        "green": COLOR_GREEN,
+        "yellow": COLOR_YELLOW,
+        "blue": COLOR_BLUE,
+        "magenta": COLOR_MAGENTA,
+        "cyan": COLOR_CYAN,
+        "reset": COLOR_RESET,
+    }
     return (
         bold(f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}")
         if text_bold
@@ -264,8 +254,30 @@ def colored(
 
 
 def main() -> None:
-    global mistral_api_key, prompt_for_ai, use_local_models, model, dry_run
+    # Парсинг аргументов
+    parsed_args = parser.parse_args()
+    use_local_models = parsed_args.local_models
+    max_symbols = parsed_args.max_symbols
+    model = parsed_args.model
+    dry_run = parsed_args.dry_run
+    temperature = parsed_args.temperature
+
+    # Промпт для ИИ
+    prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
+    Сгенерируй коммит-месседж на РУССКОМ языке, который:
+    1. Точно отражает суть изменений
+    2. Не превышает {max_symbols} символов
+    Опирайся на данные от 'git status' и 'git diff'.
+    В ответ на это сообщение тебе нужно предоставить
+    ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
+
     try:
+        if not use_local_models and not mistral_api_key:
+            print(
+                colored("Не найден MISTRAL_API_KEY для работы с API!", "red")
+            )
+            return
+
         # Получаем версию git, если он есть
         git_version = subprocess.run(  # noqa
             ["git", "--version"],
@@ -409,8 +421,6 @@ def main() -> None:
                     ):
                         subprocess.run(
                             ["git", "add", "-A"],
-                            capture_output=True,
-                            encoding="utf-8",
                         )
                     else:
                         print(
@@ -464,7 +474,7 @@ def main() -> None:
                         + git_status.stdout
                         + "Git diff: "
                         + git_diff.stdout,
-                        temperature=1.0,
+                        temperature=temperature,
                     )
                     commit_with_message_from_ai = input(
                         "Закоммитить с сообщением "
@@ -487,7 +497,7 @@ def main() -> None:
                     + git_status.stdout
                     + "Git diff: "
                     + git_diff.stdout,
-                    temperature=1.0,
+                    temperature=temperature,
                 )
                 print(
                     colored(
@@ -527,8 +537,6 @@ def main() -> None:
                     (
                         subprocess.run(
                             ["git", "add", "-A"],
-                            capture_output=True,
-                            encoding="utf-8",
                         ),
                         subprocess.run(
                             [
