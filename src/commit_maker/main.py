@@ -8,7 +8,6 @@ import subprocess
 
 import requests
 import rich.console
-import rich.theme
 import rich_argparse
 
 # Константы
@@ -138,6 +137,12 @@ generation_params.add_argument(
     "--model",
     type=str,
     help="Модель, которую ollama будет использовать.",
+)
+generation_params.add_argument(
+    "-e",
+    "--exclude",
+    nargs="+",
+    help="Файлы, которые нужно игнорировать при создании сообщения коммита",
 )
 
 
@@ -276,6 +281,7 @@ def main() -> None:
     model = parsed_args.model
     dry_run = parsed_args.dry_run
     temperature = parsed_args.temperature
+    excluded_files = parsed_args.exclude
 
     # Промпт для ИИ
     prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
