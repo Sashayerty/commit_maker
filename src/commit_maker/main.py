@@ -142,6 +142,7 @@ generation_params.add_argument(
     "-e",
     "--exclude",
     nargs="+",
+    default=[],
     help="Файлы, которые нужно игнорировать при создании сообщения коммита",
 )
 
@@ -400,7 +401,7 @@ def main() -> None:
         if dot_git:
             # Получаем разницу в коммитах
             git_status = subprocess.run(
-                ["git", "status", "-v"],
+                ["git", "status"],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -413,12 +414,21 @@ def main() -> None:
                 encoding="utf-8",
             )
 
+            if excluded_files:
+                git_diff_command = ["git", "diff", "--staged", "--", "."]
+                git_diff_command.extend(
+                    [f":!{file}" for file in excluded_files]
+                )
+            else:
+                git_diff_command = ["git", "diff", "--staged"]
+
             git_diff = subprocess.run(
-                ["git", "diff", "--staged"],
+                git_diff_command,
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
             )
+
             if (
                 (not new_files.stdout)
                 and (not git_diff.stdout)
