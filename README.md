@@ -41,11 +41,26 @@
 
 ## Установка
 
+### Pip
+
+Установка последнего релиза с pypi.
 ```bash
 # Windows
 pip install commit_maker
 # Linux/MacOS
 pip3 install commit_maker
+```
+
+### Из исходников
+
+При установке из исходников используется флаг `-e`, что позволяет после `git pull` иметь сразу же свежую версию утилиты **без переустановки**!
+```bash
+git clone https://github.com/Sashayerty/commit_maker
+cd ./commit_maker
+# Windows
+pip install -r requirements.txt
+# Linux/MacOS
+pip3 install -r requirements.txt
 ```
 
 ## Настройка переменных окружения

@@ -2,46 +2,106 @@
 # noqa: F841
 
 import argparse
+import importlib
 import os
 import subprocess
-from importlib.metadata import version
 
 import requests
+import rich.console
+import rich.theme
+import rich_argparse
 
 # Константы
 mistral_api_key = os.environ.get("MISTRAL_API_KEY")
+console = rich.console.Console()
+
+# Настройка вывода --help (это не хардкод, такой способ указан в оф.
+# документации rich_argparse)
+rich_argparse.RichHelpFormatter.styles = {
+    "argparse.args": "cyan bold",
+    "argparse.groups": "green bold",
+    "argparse.metavar": "dark_cyan",
+    "argparse.prog": "dark_green bold",
+}
+
+
+# Функции для цветного вывода
+def bold(text: str) -> str:
+    """Возвращает жирный текст
+
+    Args:
+        text (str): Текст
+
+    Returns:
+        str: Жирный текст
+    """
+    bold_start = "\033[1m"
+    bold_end = "\033[0m"
+    return f"{bold_start}{text}{bold_end}"
+
+
+def colored(
+    string: str,
+    color: str,
+    text_bold: bool = True,
+) -> str:
+    """Функция для 'окраски' строк для красивого вывода
+
+    Args:
+        string (str): Строка, которую нужно покрасить
+        color (str): Цвет покраски ['red', 'yellow', 'green', 'magenta',\
+            'blue', 'cyan', 'reset']
+        text_bold (bool, optional): Жирный текст или нет. Defaults to True.
+
+    Returns:
+        str: Покрашенная строка
+
+    Example:
+        `print(colored(string='Success!', color='green'))` # Выводит 'Success!'
+        зеленого цвета
+    """
+    COLOR_RED = "\033[31m"
+    COLOR_GREEN = "\033[32m"
+    COLOR_YELLOW = "\033[33m"
+    COLOR_BLUE = "\033[94m"
+    COLOR_MAGENTA = "\033[95m"
+    COLOR_CYAN = "\033[96m"
+    COLOR_RESET = "\033[0m"
+    COLORS_DICT = {
+        "red": COLOR_RED,
+        "green": COLOR_GREEN,
+        "yellow": COLOR_YELLOW,
+        "blue": COLOR_BLUE,
+        "magenta": COLOR_MAGENTA,
+        "cyan": COLOR_CYAN,
+        "reset": COLOR_RESET,
+    }
+    return (
+        bold(f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}")
+        if text_bold
+        else f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}"
+    )
+
 
 # Парсер параметров
 parser = argparse.ArgumentParser(
-    prog="Commit Maker",
-    usage="commit_maker [OPTION] [VALUE]",
+    prog="commit_maker",
     description="CLI-утилита, которая будет создавать сообщение "
     "для коммита на основе ИИ. Можно использовать локальные модели/Mistral AI "
     "API. Локальные модели используют ollama.",
+    formatter_class=rich_argparse.RichHelpFormatter,
 )
-parser.add_argument(
+
+# Общие параметры
+general_params = parser.add_argument_group("Общие параметры")
+general_params.add_argument(
     "-l",
     "--local-models",
     action="store_true",
     default=False,
     help="Запуск с использованием локальных моделей",
 )
-parser.add_argument(
-    "-m",
-    "--max-symbols",
-    type=int,
-    default=200,
-    metavar="[max_symbols]",
-    help="Длина сообщения коммита. Defaults to 200",
-)
-parser.add_argument(
-    "-M",
-    "--model",
-    type=str,
-    metavar="[model]",
-    help="Модель, которую ollama будет использовать.",
-)
-parser.add_argument(
+general_params.add_argument(
     "-d",
     "--dry-run",
     action="store_true",
@@ -49,19 +109,35 @@ parser.add_argument(
     help="Запуск с выводом сообщения на основе зайстейдженных "
     "изменений, без создания коммита",
 )
-parser.add_argument(
+general_params.add_argument(
+    "-V",
+    "--version",
+    action="version",
+    version=f"%(prog)s {importlib.metadata.version('commit-maker')}",
+)
+
+# Параметры генерации
+generation_params = parser.add_argument_group("Параметры генерации")
+generation_params.add_argument(
     "-t",
     "--temperature",
     default=1.0,
     type=float,
     help="Температура модели при создании месседжа.\
         Находится на отрезке [0.0, 1.5]. Defaults to 1.0",
-    metavar="[temperature]",
 )
-parser.add_argument(
-    "--version",
-    action="version",
-    version=f"%(prog)s {version('commit-maker')}",
+generation_params.add_argument(
+    "-m",
+    "--max-symbols",
+    type=int,
+    default=200,
+    help="Длина сообщения коммита. Defaults to 200",
+)
+generation_params.add_argument(
+    "-M",
+    "--model",
+    type=str,
+    help="Модель, которую ollama будет использовать.",
 )
 
 
@@ -187,63 +263,6 @@ class Ollama:
             print(colored(f"Ошибка при обращении к Ollama: {e}", "red"))
         except KeyError:
             print(colored("Ошибка парсинга ответа от Ollama", "red"))
-
-
-def bold(text: str) -> str:
-    """Возвращает жирный текст
-
-    Args:
-        text (str): Текст
-
-    Returns:
-        str: Жирный текст
-    """
-    bold_start = "\033[1m"
-    bold_end = "\033[0m"
-    return f"{bold_start}{text}{bold_end}"
-
-
-def colored(
-    string: str,
-    color: str,
-    text_bold: bool = True,
-) -> str:
-    """Функция для 'окраски' строк для красивого вывода
-
-    Args:
-        string (str): Строка, которую нужно покрасить
-        color (str): Цвет покраски ['red', 'yellow', 'green', 'magenta',\
-            'blue', 'cyan', 'reset']
-        text_bold (bool, optional): Жирный текст или нет. Defaults to True.
-
-    Returns:
-        str: Покрашенная строка
-
-    Example:
-        `print(colored(string='Success!', color='green'))` # Выводит 'Success!'
-        зеленого цвета
-    """
-    COLOR_RED = "\033[31m"
-    COLOR_GREEN = "\033[32m"
-    COLOR_YELLOW = "\033[33m"
-    COLOR_BLUE = "\033[94m"
-    COLOR_MAGENTA = "\033[95m"
-    COLOR_CYAN = "\033[96m"
-    COLOR_RESET = "\033[0m"
-    COLORS_DICT = {
-        "red": COLOR_RED,
-        "green": COLOR_GREEN,
-        "yellow": COLOR_YELLOW,
-        "blue": COLOR_BLUE,
-        "magenta": COLOR_MAGENTA,
-        "cyan": COLOR_CYAN,
-        "reset": COLOR_RESET,
-    }
-    return (
-        bold(f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}")
-        if text_bold
-        else f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}"
-    )
 
 
 # main функция
@@ -467,14 +486,18 @@ def main() -> None:
             if not dry_run:
                 retry = True
                 while retry:
-                    commit_message = client.message(
-                        message=prompt_for_ai
-                        + "Git status: "
-                        + git_status.stdout
-                        + "Git diff: "
-                        + git_diff.stdout,
-                        temperature=temperature,
-                    )
+                    with console.status(
+                        "[magenta bold]Создание сообщения коммита...",
+                        spinner_style="magenta",
+                    ):
+                        commit_message = client.message(
+                            message=prompt_for_ai
+                            + "Git status: "
+                            + git_status.stdout
+                            + "Git diff: "
+                            + git_diff.stdout,
+                            temperature=temperature,
+                        )
                     commit_with_message_from_ai = input(
                         "Закоммитить с сообщением "
                         + colored(f"'{commit_message}'", "yellow")

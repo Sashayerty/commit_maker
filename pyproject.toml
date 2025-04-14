@@ -10,6 +10,7 @@ license = { text = "MIT" }
 requires-python = ">=3.8"
 dependencies = [
     "requests>=2.32.3",
+    "rich-argparse>=1.7.0",
 ]
 
 [project.scripts]
