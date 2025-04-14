@@ -152,7 +152,11 @@ class MistralAI:
     """Класс для общения с MistralAI.
     Написан с помощью requests."""
 
-    def __init__(self, api_key: str):
+    def __init__(
+        self,
+        api_key: str,
+        model: str = "mistral-small-latest",
+    ):
         """Инициализация класса
 
         Args:
@@ -165,6 +169,7 @@ class MistralAI:
             "Accept": "application/json",
             "Authorization": f"Bearer {api_key}",
         }
+        self.model = model
 
     def message(
         self,
@@ -182,7 +187,7 @@ class MistralAI:
             str: Json-ответ/Err
         """
         data = {
-            "model": "mistral-small-latest",
+            "model": self.model,
             "messages": [
                 {
                     "role": role,
@@ -498,6 +503,7 @@ def main() -> None:
             else:
                 client = MistralAI(
                     api_key=mistral_api_key,
+                    model="mistral-large-latest",
                 )
             if not dry_run:
                 retry = True
