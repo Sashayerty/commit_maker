@@ -111,19 +111,11 @@ dependencies = [
     { name = "rich-argparse" },
 ]
 
-[package.dev-dependencies]
-requests-ver = [
-    { name = "requests" },
-]
-
 [package.metadata]
 requires-dist = [
     { name = "requests", specifier = ">=2.32.3" },
     { name = "rich-argparse", specifier = ">=1.7.0" },
 ]
-
-[package.metadata.requires-dev]
-requests-ver = [{ name = "requests", specifier = ">=2.32.3" }]
 
 [[package]]
 name = "idna"
