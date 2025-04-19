@@ -8,11 +8,13 @@ import subprocess
 
 import requests
 import rich.console
+import rich.prompt
 import rich_argparse
 
 # Константы
 mistral_api_key = os.environ.get("MISTRAL_API_KEY")
 console = rich.console.Console()
+prompt = rich.prompt.IntPrompt()
 
 # Настройка вывода --help (это не хардкод, такой способ указан в оф.
 # документации rich_argparse)
@@ -206,10 +208,10 @@ class MistralAI:
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
 
-        except requests.exceptions.RequestException as e:
-            print(colored(f"Ошибка при обращении к Mistral AI: {e}", "red"))
+        except requests.exceptions.RequestException:
+            console.print_exception()
         except KeyError:
-            print(colored("Ошибка парсинга ответа от Mistral AI", "red"))
+            console.print_exception()
 
 
 # Класс для использования API Ollama
@@ -270,10 +272,10 @@ class Ollama:
             response.raise_for_status()  # выбросит ошибку при плохом статусе
             return response.json()["choices"][0]["message"]["content"]
 
-        except requests.exceptions.RequestException as e:
-            print(colored(f"Ошибка при обращении к Ollama: {e}", "red"))
+        except requests.exceptions.RequestException:
+            console.print_exception()
         except KeyError:
-            print(colored("Ошибка парсинга ответа от Ollama", "red"))
+            console.print_exception()
 
 
 # main функция
@@ -300,8 +302,10 @@ def main() -> None:
 
     try:
         if not use_local_models and not mistral_api_key:
-            print(
-                colored("Не найден MISTRAL_API_KEY для работы с API!", "red")
+            console.print(
+                "Не найден MISTRAL_API_KEY для работы с API!",
+                style="red",
+                highlight=False,
             )
             return
 
@@ -333,51 +337,49 @@ def main() -> None:
 
         # Обработка отсутствия ollama
         if not ollama_list_of_models and use_local_models:
-            print(
-                colored(
-                    "Ollama не установлена или список моделей пуст!", "yellow"
-                )
-                + " Для установки перейдите по https://ollama.com/download"
+            console.print(
+                "[yellow]Ollama не установлена или список моделей пуст!"
+                "[/yellow] Для установки перейдите по "
+                "https://ollama.com/download",
+                highlight=False,
             )
             return None
         elif not use_local_models and model:
-            print(
+            console.print(
                 f"Для использования {model} локально используйте флаг "
-                + colored("--local-models", "yellow")
-                + ". Если нужна помощь: "
-                + colored("--help", "yellow")
+                "[yellow]--local-models[/yellow]. Если нужна помощь: "
+                "[yellow]--help[/yellow]",
+                highlight=False,
             )
             return None
         elif ollama_list_of_models and use_local_models:
             if not model:
                 if len(ollama_list_of_models) > 1:
-                    print(
-                        colored(
-                            "Для использования локальных моделей необходимо "
-                            "выбрать модель:",
-                            "yellow",
-                        )
-                        + "\n"
+                    console.print(
+                        "[yellow]Для использования локальных моделей "
+                        "необходимо "
+                        "выбрать модель:[/yellow]\n"
                         + "\n".join(
                             [
-                                f"{i + 1}. {colored(model, 'magenta', False,)}"
+                                f"[magenta]{i + 1}. {model}[/magenta]"
                                 for i, model in enumerate(
                                     ollama_list_of_models
                                 )
                             ]
-                        )
+                        ),
+                        highlight=False,
                     )
                     model_is_selected = False
                     while not model_is_selected:
-                        model = input(
-                            colored(
-                                "Введите число от 1 до "
-                                f"{len(ollama_list_of_models)}: ",
-                                "yellow",
-                            )
+                        model = prompt.ask(
+                            "[yellow]Введите число от 1 до "
+                            f"{len(ollama_list_of_models)}: [/yellow]",
                         )
-                        model = int(model) if model.isdigit() else -1
-                        if model > len(ollama_list_of_models) or model == -1:
+                        if not 1 <= model <= len(ollama_list_of_models):
+                            console.print(
+                                "[red]Введите корректное число![/red]",
+                                highlight=False,
+                            )
                             continue
                         model = ollama_list_of_models[model - 1]
                         model_is_selected = True
@@ -386,18 +388,18 @@ def main() -> None:
                     model = ollama_list_of_models[0]
             else:
                 if model not in ollama_list_of_models:
-                    print(
-                        colored(
-                            f"{model} не является доступной моделью! ", "red"
-                        )
-                        + "Доступные модели: "
-                        + colored(
-                            f"{', '.join(ollama_list_of_models)}", "yellow"
-                        )
+                    console.print(
+                        f"[red]{model} не является доступной моделью![/red] "
+                        "Доступные модели: [yellow]"
+                        f"{', '.join(ollama_list_of_models)}[/yellow]",
+                        highlight=False,
                     )
                     return None
         if model:
-            print("Выбрана модель: " + colored(model, "yellow"))
+            console.print(
+                f"Выбрана модель: [yellow]{model}[/yellow]",
+                highlight=False,
+            )
 
         # Проверяем, есть ли .git
         dot_git = ".git" in os.listdir("./")
@@ -445,7 +447,10 @@ def main() -> None:
                     ).stdout
                 )
             ):  # Проверка на отсутствие каких-либо изменений
-                print(colored("Нет добавленных изменений!", "red"))
+                console.print(
+                    "[red]Нет добавленных изменений![/red]",
+                    highlight=False,
+                )
                 return None
             if not git_diff.stdout:
                 if not dry_run:
@@ -462,17 +467,18 @@ def main() -> None:
                             ["git", "add", "-A"],
                         )
                     else:
-                        print(
-                            colored(
-                                "Добавьте необходимые файлы вручную.", "yellow"
-                            )
+                        console.print(
+                            "Добавьте необходимые файлы вручную.",
+                            style="yellow",
+                            highlight=False,
                         )
                         return None
                 else:
-                    print(
-                        colored("Нечего коммитить!", "red")
-                        + " Добавьте необходимые файлы с помощью "
-                        + colored("git add <filename>", "yellow")
+                    console.print(
+                        "[red]Нечего коммитить![/red]"
+                        " Добавьте необходимые файлы с помощью "
+                        "[yellow]git add <filename>[/yellow]",
+                        highlight=False,
                     )
                     return None
                 git_diff = subprocess.run(
@@ -486,17 +492,13 @@ def main() -> None:
                 capture_output=True,
                 encoding="utf-8",
             ).stdout:
-                print(
-                    colored(
-                        "Обратите внимание на то, что у Вас "
-                        "есть незастейдженные изменения!",
-                        "red",
-                    )
-                    + " Для добавления дополнительных файлов "
-                    + colored("Ctrl + C", "yellow")
-                    + " и выполните "
-                    + colored("git add <filename>", "yellow")
-                    + "."
+                console.print(
+                    "[red]Обратите внимание на то, что у Вас "
+                    "есть незастейдженные изменения![/red]"
+                    " Для добавления дополнительных файлов "
+                    "[yellow]Ctrl + C[/yellow] и выполните "
+                    "[yellow]git add <filename>[/yellow]",
+                    highlight=False,
                 )
             if use_local_models:
                 client = Ollama(model=model)
@@ -533,7 +535,11 @@ def main() -> None:
                         ["git", "commit", "-m", f"{commit_message}"],
                         encoding="utf-8",
                     )
-                    print(colored("Коммит успешно создан!", "green"))
+                    console.print(
+                        "Коммит успешно создан!",
+                        style="green bold",
+                        highlight=False,
+                    )
             else:
                 commit_message = client.message(
                     message=prompt_for_ai
@@ -543,18 +549,12 @@ def main() -> None:
                     + git_diff.stdout,
                     temperature=temperature,
                 )
-                print(
-                    colored(
-                        "Коммит-месседж успешно сгенерирован:", "green", False
-                    )
+                console.print(
+                    "Коммит-месседж успешно сгенерирован:",
+                    style="green bold",
+                    highlight=False,
                 )
-                print(
-                    colored(
-                        commit_message,
-                        "yellow",
-                        False,
-                    )
-                )
+                console.print(commit_message, style="yellow", highlight=False)
                 return None
 
         # Если нет
@@ -600,14 +600,8 @@ def main() -> None:
                     == "y"
                     else None
                 )
-    except FileNotFoundError as e:
-        print(
-            colored("Ollama не установлена!", "red")
-            if "ollama" in str(e)
-            else colored(str(e), "red")
-        )
-    except Exception as e:
-        print(colored("Ошибка:", "red") + " " + str(e))
+    except Exception:
+        console.print_exception()
 
 
 if __name__ == "__main__":
