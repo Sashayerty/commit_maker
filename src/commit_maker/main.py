@@ -416,6 +416,7 @@ def main() -> None:
                     "[yellow]git add <filename>[/yellow]",
                     highlight=False,
                 )
+
             if use_local_models:
                 # Получаем список моделей из Ollama, если Ollama есть
                 ollama_list_of_models = (
@@ -433,6 +434,7 @@ def main() -> None:
                 ]
             else:
                 ollama_list_of_models = 0
+
             # Обработка отсутствия ollama
             if not ollama_list_of_models and use_local_models:
                 console.print(
@@ -487,7 +489,8 @@ def main() -> None:
                 else:
                     if model not in ollama_list_of_models:
                         console.print(
-                            f"[red]{model} не является доступной моделью![/red] "
+                            f"[red]{model} не является доступной моделью!"
+                            "[/red] "
                             "Доступные модели: [yellow]"
                             f"{', '.join(ollama_list_of_models)}[/yellow]",
                             highlight=False,
@@ -498,6 +501,7 @@ def main() -> None:
                     f"Выбрана модель: [yellow]{model}[/yellow]",
                     highlight=False,
                 )
+            # Создание клиента для общения с ИИ
             if use_local_models:
                 client = Ollama(model=model)
             else:
@@ -539,19 +543,18 @@ def main() -> None:
                         highlight=False,
                     )
             else:
-                commit_message = client.message(
-                    message=prompt_for_ai
-                    + "Git status: "
-                    + git_status.stdout
-                    + "Git diff: "
-                    + git_diff.stdout,
-                    temperature=temperature,
-                )
-                console.print(
-                    "Коммит-месседж успешно сгенерирован:",
-                    style="green bold",
-                    highlight=False,
-                )
+                with console.status(
+                    "[magenta bold]Создание сообщения коммита...",
+                    spinner_style="magenta",
+                ):
+                    commit_message = client.message(
+                        message=prompt_for_ai
+                        + "Git status: "
+                        + git_status.stdout
+                        + "Git diff: "
+                        + git_diff.stdout,
+                        temperature=temperature,
+                    )
                 console.print(commit_message, style="yellow", highlight=False)
                 return None
 
