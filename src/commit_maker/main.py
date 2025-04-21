@@ -317,90 +317,6 @@ def main() -> None:
             encoding="utf-8",
         ).stdout
 
-        if use_local_models:
-            # Получаем список моделей из Ollama, если Ollama есть
-            ollama_list_of_models = (
-                subprocess.run(
-                    ["ollama", "ls"],
-                    capture_output=True,
-                    text=True,
-                    encoding="utf-8",
-                )
-                .stdout.strip()
-                .split("\n")
-            )
-            ollama_list_of_models = [
-                i.split()[0] for i in ollama_list_of_models[1:]
-            ]
-        else:
-            ollama_list_of_models = 0
-
-        # Обработка отсутствия ollama
-        if not ollama_list_of_models and use_local_models:
-            console.print(
-                "[yellow]Ollama не установлена или список моделей пуст!"
-                "[/yellow] Для установки перейдите по "
-                "https://ollama.com/download",
-                highlight=False,
-            )
-            return None
-        elif not use_local_models and model:
-            console.print(
-                f"Для использования {model} локально используйте флаг "
-                "[yellow]--local-models[/yellow]. Если нужна помощь: "
-                "[yellow]--help[/yellow]",
-                highlight=False,
-            )
-            return None
-        elif ollama_list_of_models and use_local_models:
-            if not model:
-                if len(ollama_list_of_models) > 1:
-                    console.print(
-                        "[yellow]Для использования локальных моделей "
-                        "необходимо "
-                        "выбрать модель:[/yellow]\n"
-                        + "\n".join(
-                            [
-                                f"[magenta]{i + 1}. {model}[/magenta]"
-                                for i, model in enumerate(
-                                    ollama_list_of_models
-                                )
-                            ]
-                        ),
-                        highlight=False,
-                    )
-                    model_is_selected = False
-                    while not model_is_selected:
-                        model = prompt.ask(
-                            "[yellow]Введите число от 1 до "
-                            f"{len(ollama_list_of_models)}: [/yellow]",
-                        )
-                        if not 1 <= model <= len(ollama_list_of_models):
-                            console.print(
-                                "[red]Введите корректное число![/red]",
-                                highlight=False,
-                            )
-                            continue
-                        model = ollama_list_of_models[model - 1]
-                        model_is_selected = True
-                        break
-                else:
-                    model = ollama_list_of_models[0]
-            else:
-                if model not in ollama_list_of_models:
-                    console.print(
-                        f"[red]{model} не является доступной моделью![/red] "
-                        "Доступные модели: [yellow]"
-                        f"{', '.join(ollama_list_of_models)}[/yellow]",
-                        highlight=False,
-                    )
-                    return None
-        if model:
-            console.print(
-                f"Выбрана модель: [yellow]{model}[/yellow]",
-                highlight=False,
-            )
-
         # Проверяем, есть ли .git
         dot_git = ".git" in os.listdir("./")
 
@@ -498,6 +414,88 @@ def main() -> None:
                     " Для добавления дополнительных файлов "
                     "[yellow]Ctrl + C[/yellow] и выполните "
                     "[yellow]git add <filename>[/yellow]",
+                    highlight=False,
+                )
+            if use_local_models:
+                # Получаем список моделей из Ollama, если Ollama есть
+                ollama_list_of_models = (
+                    subprocess.run(
+                        ["ollama", "ls"],
+                        capture_output=True,
+                        text=True,
+                        encoding="utf-8",
+                    )
+                    .stdout.strip()
+                    .split("\n")
+                )
+                ollama_list_of_models = [
+                    i.split()[0] for i in ollama_list_of_models[1:]
+                ]
+            else:
+                ollama_list_of_models = 0
+            # Обработка отсутствия ollama
+            if not ollama_list_of_models and use_local_models:
+                console.print(
+                    "[yellow]Ollama не установлена или список моделей пуст!"
+                    "[/yellow] Для установки перейдите по "
+                    "https://ollama.com/download",
+                    highlight=False,
+                )
+                return None
+            elif not use_local_models and model:
+                console.print(
+                    f"Для использования {model} локально используйте флаг "
+                    "[yellow]--local-models[/yellow]. Если нужна помощь: "
+                    "[yellow]--help[/yellow]",
+                    highlight=False,
+                )
+                return None
+            elif ollama_list_of_models and use_local_models:
+                if not model:
+                    if len(ollama_list_of_models) > 1:
+                        console.print(
+                            "[yellow]Для использования локальных моделей "
+                            "необходимо "
+                            "выбрать модель:[/yellow]\n"
+                            + "\n".join(
+                                [
+                                    f"[magenta]{i + 1}. {model}[/magenta]"
+                                    for i, model in enumerate(
+                                        ollama_list_of_models
+                                    )
+                                ]
+                            ),
+                            highlight=False,
+                        )
+                        model_is_selected = False
+                        while not model_is_selected:
+                            model = prompt.ask(
+                                "[yellow]Введите число от 1 до "
+                                f"{len(ollama_list_of_models)}: [/yellow]",
+                            )
+                            if not 1 <= model <= len(ollama_list_of_models):
+                                console.print(
+                                    "[red]Введите корректное число![/red]",
+                                    highlight=False,
+                                )
+                                continue
+                            model = ollama_list_of_models[model - 1]
+                            model_is_selected = True
+                            break
+                    else:
+                        model = ollama_list_of_models[0]
+                else:
+                    if model not in ollama_list_of_models:
+                        console.print(
+                            f"[red]{model} не является доступной моделью![/red] "
+                            "Доступные модели: [yellow]"
+                            f"{', '.join(ollama_list_of_models)}[/yellow]",
+                            highlight=False,
+                        )
+                        return None
+            if model:
+                console.print(
+                    f"Выбрана модель: [yellow]{model}[/yellow]",
                     highlight=False,
                 )
             if use_local_models:
