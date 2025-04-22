@@ -203,7 +203,6 @@ class MistralAI:
                 url=self.url,
                 json=data,
                 headers=self.headers,
-                timeout=60,
             )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]
@@ -267,7 +266,6 @@ class Ollama:
                 url=self.url,
                 json=data,
                 headers=self.headers,
-                timeout=60,
             )
             response.raise_for_status()  # выбросит ошибку при плохом статусе
             return response.json()["choices"][0]["message"]["content"]
@@ -418,20 +416,49 @@ def main() -> None:
                 )
 
             if use_local_models:
-                # Получаем список моделей из Ollama, если Ollama есть
-                ollama_list_of_models = (
+
+                # Смотрим на установку Ollama
+                try:
                     subprocess.run(
-                        ["ollama", "ls"],
-                        capture_output=True,
+                        ["ollama", "--version"],
                         text=True,
-                        encoding="utf-8",
+                        capture_output=True,
                     )
-                    .stdout.strip()
-                    .split("\n")
+                except FileNotFoundError:
+                    console.print(
+                        "Ollama не установлена!",
+                        style="red bold",
+                    )
+                    return None
+
+                # Проверка на запущенную Ollama
+                ollama_served = (
+                    requests.get("http://localhost:11434").status_code == 200
                 )
-                ollama_list_of_models = [
-                    i.split()[0] for i in ollama_list_of_models[1:]
-                ]
+
+                if ollama_served:
+                    # Получаем список моделей из Ollama
+                    ollama_models_json = requests.get(
+                        "http://localhost:11434/api/tags"
+                    ).json()
+                    if ollama_models_json["models"]:
+                        ollama_list_of_models = [
+                            i["model"] for i in ollama_models_json["models"]
+                        ]
+                    else:
+                        console.print(
+                            "[yellow]Список моделей Ollama пуст!"
+                            "[/yellow] Для установки перейдите по "
+                            "https://ollama.com/models",
+                            highlight=False,
+                        )
+                        return None
+                else:
+                    console.print(
+                        "[yellow]Сервер Ollama не запущен или Ollama не "
+                        "установлена![/yellow]"
+                    )
+                    return None
             else:
                 ollama_list_of_models = 0
 
@@ -601,6 +628,8 @@ def main() -> None:
                     == "y"
                     else None
                 )
+    except KeyboardInterrupt:
+        return None
     except Exception:
         console.print_exception()
 
