@@ -82,7 +82,7 @@ generation_params.add_argument(
     default=[],
     help="Файлы, которые нужно игнорировать при создании сообщения коммита",
 )
-general_params.add_argument(
+generation_params.add_argument(
     "-w",
     "--wish",
     default=None,
