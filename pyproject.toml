@@ -2,7 +2,7 @@
 name = "commit-maker"
 version = "0.2.2"
 authors = [
-  { name="Alex Bulgakov", email="sashayerty@ya.ru" }
+  { name="Alex Bulgakov", email="sashayerty@ya.ru" },
 ]
 description = "CLI-утилита для генерации git-коммитов с помощью ИИ"
 readme = "README.md"
@@ -17,6 +17,7 @@ dependencies = [
 commit_maker = "commit_maker.main:main"
 
 [project.urls]
+homepage = "https://github.com/sashayerty/commit_maker"
 github = "https://github.com/sashayerty/commit_maker"
 
 [build-system]
