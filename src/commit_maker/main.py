@@ -1,6 +1,4 @@
 # CLI-утилита, которая будет создавать сообщение для коммита на основе ИИ.
-# noqa: F841
-
 import argparse
 import importlib
 import os
@@ -9,80 +7,17 @@ import subprocess
 import requests
 import rich.console
 import rich.prompt
-import rich_argparse
+
+from .colored import colored
+from .custom_int_prompt import CustomIntPrompt
+from .mistral import MistralAI
+from .ollama import Ollama
+from .rich_custom_formatter import CustomFormatter
 
 # Константы
 mistral_api_key = os.environ.get("MISTRAL_API_KEY")
 console = rich.console.Console()
-prompt = rich.prompt.IntPrompt()
-
-# Настройка вывода --help (это не хардкод, такой способ указан в оф.
-# документации rich_argparse)
-rich_argparse.RichHelpFormatter.styles = {
-    "argparse.args": "cyan bold",
-    "argparse.groups": "green bold",
-    "argparse.metavar": "dark_cyan",
-    "argparse.prog": "dark_green bold",
-}
-
-
-# Функции для цветного вывода
-def bold(text: str) -> str:
-    """Возвращает жирный текст
-
-    Args:
-        text (str): Текст
-
-    Returns:
-        str: Жирный текст
-    """
-    bold_start = "\033[1m"
-    bold_end = "\033[0m"
-    return f"{bold_start}{text}{bold_end}"
-
-
-def colored(
-    string: str,
-    color: str,
-    text_bold: bool = True,
-) -> str:
-    """Функция для 'окраски' строк для красивого вывода
-
-    Args:
-        string (str): Строка, которую нужно покрасить
-        color (str): Цвет покраски ['red', 'yellow', 'green', 'magenta',\
-            'blue', 'cyan', 'reset']
-        text_bold (bool, optional): Жирный текст или нет. Defaults to True.
-
-    Returns:
-        str: Покрашенная строка
-
-    Example:
-        `print(colored(string='Success!', color='green'))` # Выводит 'Success!'
-        зеленого цвета
-    """
-    COLOR_RED = "\033[31m"
-    COLOR_GREEN = "\033[32m"
-    COLOR_YELLOW = "\033[33m"
-    COLOR_BLUE = "\033[94m"
-    COLOR_MAGENTA = "\033[95m"
-    COLOR_CYAN = "\033[96m"
-    COLOR_RESET = "\033[0m"
-    COLORS_DICT = {
-        "red": COLOR_RED,
-        "green": COLOR_GREEN,
-        "yellow": COLOR_YELLOW,
-        "blue": COLOR_BLUE,
-        "magenta": COLOR_MAGENTA,
-        "cyan": COLOR_CYAN,
-        "reset": COLOR_RESET,
-    }
-    return (
-        bold(f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}")
-        if text_bold
-        else f"{COLORS_DICT[color]}{string}{COLORS_DICT['reset']}"
-    )
-
+prompt = CustomIntPrompt()
 
 # Парсер параметров
 parser = argparse.ArgumentParser(
@@ -90,7 +25,7 @@ parser = argparse.ArgumentParser(
     description="CLI-утилита, которая будет создавать сообщение "
     "для коммита на основе ИИ. Можно использовать локальные модели/Mistral AI "
     "API. Локальные модели используют ollama.",
-    formatter_class=rich_argparse.RichHelpFormatter,
+    formatter_class=CustomFormatter,
 )
 
 # Общие параметры
@@ -147,133 +82,13 @@ generation_params.add_argument(
     default=[],
     help="Файлы, которые нужно игнорировать при создании сообщения коммита",
 )
-
-
-# Класс для использования API Mistral AI
-class MistralAI:
-    """Класс для общения с MistralAI.
-    Написан с помощью requests."""
-
-    def __init__(
-        self,
-        api_key: str,
-        model: str = "mistral-small-latest",
-    ):
-        """Инициализация класса
-
-        Args:
-            api_key (str): Апи ключ MistralAI
-        """
-        self.url = "https://api.mistral.ai/v1/chat/completions"
-        self.api_key = api_key
-        self.headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-            "Authorization": f"Bearer {api_key}",
-        }
-        self.model = model
-
-    def message(
-        self,
-        message: str,
-        role: str = "user",
-        temperature: float = 0.7,
-    ) -> str:
-        """Функция сообщения
-
-        Args:
-            message (str): Сообщение
-            role (str, optional): Роль. Defaults to "user".
-
-        Returns:
-            str: Json-ответ/Err
-        """
-        data = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": role,
-                    "content": message,
-                }
-            ],
-            "temperature": 0.7,
-        }
-        try:
-            response = requests.post(
-                url=self.url,
-                json=data,
-                headers=self.headers,
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"]
-
-        except requests.exceptions.RequestException:
-            console.print_exception()
-        except KeyError:
-            console.print_exception()
-
-
-# Класс для использования API Ollama
-class Ollama:
-    """Класс для общения с локальными моделями Ollama.
-    Написан с помощью requests."""
-
-    def __init__(
-        self,
-        model: str,
-    ):
-        """Инициализация класса"""
-        self.model = model
-        self.url = "http://localhost:11434/api/chat"
-        self.headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-
-    def message(
-        self,
-        message: str,
-        temperature: float = 0.7,
-        role: str = "user",
-    ) -> str:
-        """Функция сообщения
-
-        Args:
-            message (str): Сообщение
-            model (str): Модель, с которой будем общаться
-            temperature (float, optional): Температура общения. Defaults to 0.7
-            role (str, optional): Роль в сообщении.
-
-        Returns:
-            str: Json-ответ/Err
-        """
-        data = {
-            "model": self.model,
-            "messages": [
-                {
-                    "role": role,
-                    "content": message,
-                }
-            ],
-            "options": {
-                "temperature": temperature,
-            },
-            "stream": False,
-        }
-
-        try:
-            response = requests.post(
-                url=self.url,
-                json=data,
-                headers=self.headers,
-            )
-            response.raise_for_status()  # выбросит ошибку при плохом статусе
-            return response.json()["choices"][0]["message"]["content"]
-
-        except requests.exceptions.RequestException:
-            console.print_exception()
-        except KeyError:
-            console.print_exception()
+general_params.add_argument(
+    "-w",
+    "--wish",
+    default=None,
+    type=str,
+    help="Пожелания/правки для сообщения.",
+)
 
 
 # main функция
@@ -288,6 +103,7 @@ def main() -> None:
     dry_run = parsed_args.dry_run
     temperature = parsed_args.temperature
     excluded_files = parsed_args.exclude
+    wish = parsed_args.wish
 
     # Промпт для ИИ
     prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
@@ -295,6 +111,7 @@ def main() -> None:
     1. Точно отражает суть изменений
     2. Не превышает {max_symbols} символов
     Опирайся на данные от 'git status' и 'git diff'.
+    Учти пожелания пользователя: {wish}.
     В ответ на это сообщение тебе нужно предоставить
     ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
 
