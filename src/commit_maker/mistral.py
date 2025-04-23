@@ -31,17 +31,20 @@ class MistralAI:
     def message(
         self,
         message: str,
+        timeout: int,
         role: str = "user",
         temperature: float = 0.7,
     ) -> str:
-        """Функция сообщения
+        """Функция для общения с моделью
 
         Args:
             message (str): Сообщение
-            role (str, optional): Роль. Defaults to "user".
+            timeout (int): Таймаут(время ожидания, в сек.)
+            role (str, optional): Роль сообщения. Defaults to "user".
+            temperature (float, optional): Температура общения. Defaults to 0.7. #noqa
 
         Returns:
-            str: Json-ответ/Err
+            str: _description_
         """
         data = {
             "model": self.model,
@@ -58,6 +61,7 @@ class MistralAI:
                 url=self.url,
                 json=data,
                 headers=self.headers,
+                timeout=timeout,
             )
             response.raise_for_status()
             return response.json()["choices"][0]["message"]["content"]

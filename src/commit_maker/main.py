@@ -51,6 +51,13 @@ general_params.add_argument(
     action="version",
     version=f"%(prog)s {importlib.metadata.version('commit-maker')}",
 )
+general_params.add_argument(
+    "-o",
+    "--timeout",
+    type=int,
+    default=None,
+    help="Меняет таймаут для моделей. Изначально равен None.",
+)
 
 # Параметры генерации
 generation_params = parser.add_argument_group("Параметры генерации")
@@ -60,14 +67,14 @@ generation_params.add_argument(
     default=1.0,
     type=float,
     help="Температура модели при создании месседжа.\
-        Находится на отрезке [0.0, 1.5]. Defaults to 1.0",
+        Находится на отрезке [0.0, 1.5]. Изначально равен 1.0",
 )
 generation_params.add_argument(
     "-m",
     "--max-symbols",
     type=int,
     default=200,
-    help="Длина сообщения коммита. Defaults to 200",
+    help="Длина сообщения коммита. Изначально равен 200",
 )
 generation_params.add_argument(
     "-M",
@@ -104,6 +111,7 @@ def main() -> None:
     temperature = parsed_args.temperature
     excluded_files = parsed_args.exclude
     wish = parsed_args.wish
+    timeout = parsed_args.timeout
 
     # Промпт для ИИ
     prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
@@ -367,6 +375,7 @@ def main() -> None:
                             + "Git diff: "
                             + git_diff.stdout,
                             temperature=temperature,
+                            timeout=timeout,
                         )
                     commit_with_message_from_ai = input(
                         "Закоммитить с сообщением "
@@ -398,6 +407,7 @@ def main() -> None:
                         + "Git diff: "
                         + git_diff.stdout,
                         temperature=temperature,
+                        timeout=timeout,
                     )
                 console.print(commit_message, style="yellow", highlight=False)
                 return None

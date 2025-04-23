@@ -24,6 +24,7 @@ class Ollama:
     def message(
         self,
         message: str,
+        timeout: int,
         temperature: float = 0.7,
         role: str = "user",
     ) -> str:
@@ -31,6 +32,7 @@ class Ollama:
 
         Args:
             message (str): Сообщение
+            timeout (int): Таймаут ожидания сообщения
             model (str): Модель, с которой будем общаться
             temperature (float, optional): Температура общения. Defaults to 0.7
             role (str, optional): Роль в сообщении.
@@ -57,6 +59,7 @@ class Ollama:
                 url=self.url,
                 json=data,
                 headers=self.headers,
+                timeout=timeout,
             )
             response.raise_for_status()  # выбросит ошибку при плохом статусе
             return response.json()["choices"][0]["message"]["content"]
