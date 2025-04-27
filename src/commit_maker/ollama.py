@@ -62,7 +62,7 @@ class Ollama:
                 timeout=timeout,
             )
             response.raise_for_status()  # выбросит ошибку при плохом статусе
-            return response.json()["choices"][0]["message"]["content"]
+            return response.json()["message"]["content"]
 
         except requests.exceptions.RequestException:
             console.print_exception()
