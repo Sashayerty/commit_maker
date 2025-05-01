@@ -10,6 +10,7 @@ import rich.prompt
 
 from .colored import colored
 from .custom_int_prompt import CustomIntPrompt
+from .cut_think_part import cut_think
 from .mistral import MistralAI
 from .ollama import Ollama
 from .rich_custom_formatter import CustomFormatter
@@ -368,14 +369,16 @@ def main() -> None:
                         "[magenta bold]Создание сообщения коммита...",
                         spinner_style="magenta",
                     ):
-                        commit_message = client.message(
-                            message=prompt_for_ai
-                            + "Git status: "
-                            + git_status.stdout
-                            + "Git diff: "
-                            + git_diff.stdout,
-                            temperature=temperature,
-                            timeout=timeout,
+                        commit_message = cut_think(
+                            client.message(
+                                message=prompt_for_ai
+                                + "Git status: "
+                                + git_status.stdout
+                                + "Git diff: "
+                                + git_diff.stdout,
+                                temperature=temperature,
+                                timeout=timeout,
+                            )
                         )
                     commit_with_message_from_ai = input(
                         "Закоммитить с сообщением "
@@ -400,14 +403,16 @@ def main() -> None:
                     "[magenta bold]Создание сообщения коммита...",
                     spinner_style="magenta",
                 ):
-                    commit_message = client.message(
-                        message=prompt_for_ai
-                        + "Git status: "
-                        + git_status.stdout
-                        + "Git diff: "
-                        + git_diff.stdout,
-                        temperature=temperature,
-                        timeout=timeout,
+                    commit_message = cut_think(
+                        client.message(
+                            message=prompt_for_ai
+                            + "Git status: "
+                            + git_status.stdout
+                            + "Git diff: "
+                            + git_diff.stdout,
+                            temperature=temperature,
+                            timeout=timeout,
+                        )
                     )
                 console.print(commit_message, style="yellow", highlight=False)
                 return None
