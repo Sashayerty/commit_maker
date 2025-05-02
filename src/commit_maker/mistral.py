@@ -31,7 +31,7 @@ class MistralAI:
     def message(
         self,
         message: str,
-        timeout: int,
+        timeout: int | None = None,
         role: str = "user",
         temperature: float = 0.7,
     ) -> str:

@@ -24,7 +24,7 @@ class Ollama:
     def message(
         self,
         message: str,
-        timeout: int,
+        timeout: int | None = None,
         temperature: float = 0.7,
         role: str = "user",
     ) -> str:
