@@ -326,7 +326,7 @@ def main() -> None:
                         while not model_is_selected:
                             model = prompt.ask(
                                 "[yellow]Введите число от 1 до "
-                                f"{len(ollama_list_of_models)}: [/yellow]",
+                                f"{len(ollama_list_of_models)}[/yellow]",
                             )
                             if not (1 <= model <= len(ollama_list_of_models)):
                                 console.print(
