@@ -1,4 +1,6 @@
 # Класс для использования API Ollama
+from typing import Optional
+
 import requests
 import rich.console
 
@@ -24,7 +26,7 @@ class Ollama:
     def message(
         self,
         message: str,
-        timeout: int | None = None,
+        timeout: Optional[int],
         temperature: float = 0.7,
         role: str = "user",
     ) -> str:

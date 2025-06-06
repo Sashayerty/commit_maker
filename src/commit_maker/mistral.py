@@ -1,4 +1,6 @@
 # Класс для использования API Mistral AI
+from typing import Optional
+
 import requests
 import rich.console
 
@@ -31,7 +33,7 @@ class MistralAI:
     def message(
         self,
         message: str,
-        timeout: int | None = None,
+        timeout: Optional[int],
         role: str = "user",
         temperature: float = 0.7,
     ) -> str:
