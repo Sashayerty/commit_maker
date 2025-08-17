@@ -83,15 +83,15 @@ commit_maker [OPTION] [VALUE]
 ```
 
 ### Usage Examples
-**-h**, **--help** - display help
-**-l**, **--local-models** - use local models
-**-m**, **--max-symbols** - limit the length of the commit message
-**-M**, **--model** - specify which local model to use (with **-l**)
-**-d**, **--dry-run** - display the message based on staged changes without creating a commit
-**-t**, **--temperature** - model temperature when creating the message
-**-e**, **--exclude** - files to ignore when creating the commit message
-**-w**, **--wish** - wishes/edits for the message
-**--version** - show version
+**-h**, **--help** - display help  
+**-l**, **--local-models** - use local models  
+**-m**, **--max-symbols** - limit the length of the commit message  
+**-M**, **--model** - specify which local model to use (with **-l**)  
+**-d**, **--dry-run** - display the message based on staged changes without creating a commit  
+**-t**, **--temperature** - model temperature when creating the message  
+**-e**, **--exclude** - files to ignore when creating the commit message  
+**-w**, **--wish** - wishes/edits for the message  
+**--version** - show version  
 
 1. Use local models, limit commit message length to 300 characters, use qwen2.5:12b
    ```bash
