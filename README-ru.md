@@ -1,4 +1,4 @@
-# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-purple)](https://docs.astral.sh/uv/) [![Created with ollama](https://img.shields.io/badge/Created_with-ollama-white)](https://ollama.com/) [![PyPi](https://img.shields.io/badge/Available_on-pypi-orange)](https://pypi.org/project/commit-maker/)
+# Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-purple)](https://docs.astral.sh/uv/) [![Created with ollama](https://img.shields.io/badge/Created_with-ollama-white)](https://ollama.com/)
 
 ![Демонстрация](./commit_maker.svg)
 
@@ -40,16 +40,6 @@
 Для установки ollama переходим на сайт [Ollama](https://ollama.com/download) и выбираем способ, подходящий для Вашей системы.
 
 ## Установка
-
-### Pip
-
-Установка последнего релиза с pypi.
-```bash
-# Windows
-pip install commit_maker
-# Linux/MacOS
-pip3 install commit_maker
-```
 
 ### Из исходников
 
@@ -109,7 +99,8 @@ pip3 install -r requirements.txt
 **`-t`**, **`--temperature`** - температура модели при создании месседжа  
 **`-e`**, **`--exclude`** - файлы, которые нужно игнорировать при создании сообщения коммита  
 **`-w`**, **`--wish`** - Пожелания/правки для сообщения.  
-**`--version`** - показывает версию
+**`-L`**, **`--language`** - меняет язык коммита  
+**`-V`**, **`--version`** - показывает версию
 
 1. Используем локальные модели, ограничение длины сообщения коммита 300 символов, используем qwen2.5:12b
 
