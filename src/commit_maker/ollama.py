@@ -25,31 +25,24 @@ class Ollama:
 
     def message(
         self,
-        message: str,
+        messages: list[dict[str]],
         timeout: Optional[int],
-        temperature: float = 0.7,
-        role: str = "user",
+        temperature: float,
     ) -> str:
         """Функция сообщения
 
         Args:
-            message (str): Сообщение
+            messages (list[dict[str]]): Список сообщений
             timeout (int): Таймаут ожидания сообщения
             model (str): Модель, с которой будем общаться
             temperature (float, optional): Температура общения. Defaults to 0.7
-            role (str, optional): Роль в сообщении.
 
         Returns:
             str: Json-ответ/Err
         """
         data = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": role,
-                    "content": message,
-                }
-            ],
+            "messages": messages,
             "options": {
                 "temperature": temperature,
             },

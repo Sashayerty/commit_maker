@@ -1,4 +1,4 @@
-# CLI-утилита, которая будет создавать сообщение для коммита на основе ИИ.
+# CLI utility that generates commit messages using AI.
 import argparse
 import importlib
 import os
@@ -6,7 +6,6 @@ import subprocess
 
 import requests
 import rich.console
-import rich.prompt
 
 from .colored import colored
 from .custom_int_prompt import CustomIntPrompt
@@ -15,36 +14,35 @@ from .mistral import MistralAI
 from .ollama import Ollama
 from .rich_custom_formatter import CustomFormatter
 
-# Константы
+# Constants
 mistral_api_key = os.environ.get("MISTRAL_API_KEY")
 console = rich.console.Console()
 prompt = CustomIntPrompt()
+available_langs = ["en", "ru"]
 
-# Парсер параметров
+# Argument parser
 parser = argparse.ArgumentParser(
     prog="commit_maker",
-    description="CLI-утилита, которая будет создавать сообщение "
-    "для коммита на основе ИИ. Можно использовать локальные модели/Mistral AI "
-    "API. Локальные модели используют ollama.",
+    description="CLI utility that generates commit messages using AI. "
+    "Supports local models/Mistral AI API. Local models use ollama.",
     formatter_class=CustomFormatter,
 )
 
-# Общие параметры
-general_params = parser.add_argument_group("Общие параметры")
+# General parameters
+general_params = parser.add_argument_group("General parameters")
 general_params.add_argument(
     "-l",
     "--local-models",
     action="store_true",
     default=False,
-    help="Запуск с использованием локальных моделей",
+    help="Use local models",
 )
 general_params.add_argument(
     "-d",
     "--dry-run",
     action="store_true",
     default=False,
-    help="Запуск с выводом сообщения на основе зайстейдженных "
-    "изменений, без создания коммита",
+    help="Dry run: show commit message without creating commit",
 )
 general_params.add_argument(
     "-V",
@@ -57,53 +55,60 @@ general_params.add_argument(
     "--timeout",
     type=int,
     default=None,
-    help="Меняет таймаут для моделей. Изначально равен None.",
+    help="Change timeout for models. Default is None.",
 )
 
-# Параметры генерации
-generation_params = parser.add_argument_group("Параметры генерации")
+# Generation parameters
+generation_params = parser.add_argument_group("Generation parameters")
 generation_params.add_argument(
     "-t",
     "--temperature",
     default=1.0,
     type=float,
-    help="Температура модели при создании месседжа.\
-        Находится на отрезке [0.0, 1.5]. Изначально равен 1.0",
+    help="Model temperature for message generation. "
+         "Range: [0.0, 1.5]. Default: 1.0",
 )
 generation_params.add_argument(
     "-m",
     "--max-symbols",
     type=int,
     default=200,
-    help="Длина сообщения коммита. Изначально равен 200",
+    help="Maximum commit message length. Default: 200",
 )
 generation_params.add_argument(
     "-M",
     "--model",
     type=str,
-    help="Модель, которую ollama будет использовать.",
+    help="Model to be used by ollama",
 )
 generation_params.add_argument(
     "-e",
     "--exclude",
     nargs="+",
     default=[],
-    help="Файлы, которые нужно игнорировать при создании сообщения коммита",
+    help="Files to exclude when generating commit message",
 )
 generation_params.add_argument(
     "-w",
     "--wish",
     default=None,
     type=str,
-    help="Пожелания/правки для сообщения.",
+    help="Custom wishes/edits for the commit message",
+)
+generation_params.add_argument(
+    "-L",
+    "--language",
+    choices=available_langs,
+    default="ru",
+    help="Language of generated commit message (en/ru)",
 )
 
 
-# main функция
+# Main function
 
 
 def main() -> None:
-    # Парсинг аргументов
+    # Parsing arguments
     parsed_args = parser.parse_args()
     use_local_models = parsed_args.local_models
     max_symbols = parsed_args.max_symbols
@@ -113,27 +118,29 @@ def main() -> None:
     excluded_files = parsed_args.exclude
     wish = parsed_args.wish
     timeout = parsed_args.timeout
+    lang = parsed_args.language
 
-    # Промпт для ИИ
-    prompt_for_ai = f"""Привет! Ты составитель коммитов для git.
-    Сгенерируй коммит-месседж на РУССКОМ языке, который:
-    1. Точно отражает суть изменений
-    2. Не превышает {max_symbols} символов
-    Опирайся на данные от 'git status' и 'git diff'.
-    Учти пожелания пользователя: {wish}.
-    В ответ на это сообщение тебе нужно предоставить
-    ТОЛЬКО коммит. Пиши просто обычный текст, без markdown!"""
+    # AI prompt
+    prompt_for_ai = f"""You are a git commit message generator.
+    Generate a single commit message in
+    {"Russian" if lang == "ru" else "English"} that:
+    Clearly summarizes the purpose of the changes.
+    Does not exceed {max_symbols} characters.
+    Uses information from git status and git diff.
+    Takes into account user preferences: {wish}.
+    Output only the commit message — plain text, no markdown, no
+    explanations, no formatting."""
 
     try:
         if not use_local_models and not mistral_api_key:
             console.print(
-                "Не найден MISTRAL_API_KEY для работы с API!",
+                "MISTRAL_API_KEY not found for API usage!",
                 style="red",
                 highlight=False,
             )
             return
 
-        # Получаем версию git, если он есть
+        # Get git version if available
         git_version = subprocess.run(  # noqa
             ["git", "--version"],
             capture_output=True,
@@ -141,12 +148,12 @@ def main() -> None:
             encoding="utf-8",
         ).stdout
 
-        # Проверяем, есть ли .git
+        # Check if .git exists
         dot_git = ".git" in os.listdir("./")
 
-        # Если есть
+        # If .git exists
         if dot_git:
-            # Получаем разницу в коммитах
+            # Get commit differences
             git_status = subprocess.run(
                 ["git", "status"],
                 capture_output=True,
@@ -163,9 +170,7 @@ def main() -> None:
 
             if excluded_files:
                 git_diff_command = ["git", "diff", "--staged", "--", "."]
-                git_diff_command.extend(
-                    [f":!{file}" for file in excluded_files]
-                )
+                git_diff_command.extend([f":!{file}" for file in excluded_files])  # noqa
             else:
                 git_diff_command = ["git", "diff", "--staged"]
 
@@ -186,9 +191,9 @@ def main() -> None:
                         encoding="utf-8",
                     ).stdout
                 )
-            ):  # Проверка на отсутствие каких-либо изменений
+            ):  # Check for no changes
                 console.print(
-                    "[red]Нет добавленных изменений![/red]",
+                    "[red]No changes added![/red]",
                     highlight=False,
                 )
                 return None
@@ -196,8 +201,8 @@ def main() -> None:
                 if not dry_run:
                     if (
                         input(
-                            colored("Нет застейдженных изменений!", "red")
-                            + " Добавить всё автоматически с помощью "
+                            colored("No staged changes!", "red")
+                            + " Add all automatically using "
                             + colored("git add -A", "yellow")
                             + "? [y/N]: "
                         )
@@ -208,15 +213,15 @@ def main() -> None:
                         )
                     else:
                         console.print(
-                            "Добавьте необходимые файлы вручную.",
+                            "Add required files manually.",
                             style="yellow",
                             highlight=False,
                         )
                         return None
                 else:
                     console.print(
-                        "[red]Нечего коммитить![/red]"
-                        " Добавьте необходимые файлы с помощью "
+                        "[red]Nothing to commit![/red]"
+                        " Add required files using "
                         "[yellow]git add <filename>[/yellow]",
                         highlight=False,
                     )
@@ -233,17 +238,15 @@ def main() -> None:
                 encoding="utf-8",
             ).stdout:
                 console.print(
-                    "[red]Обратите внимание на то, что у Вас "
-                    "есть незастейдженные изменения![/red]"
-                    " Для добавления дополнительных файлов "
-                    "[yellow]Ctrl + C[/yellow] и выполните "
+                    "[red]Note: You have unstaged changes![/red]"
+                    " To add more files, press "
+                    "[yellow]Ctrl + C[/yellow] and run "
                     "[yellow]git add <filename>[/yellow]",
                     highlight=False,
                 )
 
             if use_local_models:
-
-                # Смотрим на установку Ollama
+                # Check Ollama installation
                 try:
                     subprocess.run(
                         ["ollama", "--version"],
@@ -252,18 +255,18 @@ def main() -> None:
                     )
                 except FileNotFoundError:
                     console.print(
-                        "Ollama не установлена!",
+                        "Ollama is not installed!",
                         style="red bold",
                     )
                     return None
 
-                # Проверка на запущенную Ollama
+                # Check if Ollama is running
                 ollama_served = (
                     requests.get("http://localhost:11434").status_code == 200
                 )
 
                 if ollama_served:
-                    # Получаем список моделей из Ollama
+                    # Get list of models from Ollama
                     ollama_models_json = requests.get(
                         "http://localhost:11434/api/tags"
                     ).json()
@@ -273,34 +276,34 @@ def main() -> None:
                         ]
                     else:
                         console.print(
-                            "[yellow]Список моделей Ollama пуст!"
-                            "[/yellow] Для установки перейдите по "
+                            "[yellow]Ollama model list is empty!"
+                            "[/yellow] To install models, visit "
                             "https://ollama.com/models",
                             highlight=False,
                         )
                         return None
                 else:
                     console.print(
-                        "[yellow]Сервер Ollama не запущен или Ollama не "
-                        "установлена![/yellow]"
+                        "[yellow]Ollama server not running\n"
+                        "or not installed![/yellow]"
                     )
                     return None
             else:
                 ollama_list_of_models = 0
 
-            # Обработка отсутствия ollama
+            # Handle missing Ollama
             if not ollama_list_of_models and use_local_models:
                 console.print(
-                    "[yellow]Ollama не установлена или список моделей пуст!"
-                    "[/yellow] Для установки перейдите по "
+                    "[yellow]Ollama is not installed or model list is empty!"
+                    "[/yellow] To install, visit "
                     "https://ollama.com/download",
                     highlight=False,
                 )
                 return None
             elif not use_local_models and model:
                 console.print(
-                    f"Для использования {model} локально используйте флаг "
-                    "[yellow]--local-models[/yellow]. Если нужна помощь: "
+                    f"To use {model} locally, use the flag "
+                    "[yellow]--local-models[/yellow]. For help: "
                     "[yellow]--help[/yellow]",
                     highlight=False,
                 )
@@ -309,15 +312,11 @@ def main() -> None:
                 if not model:
                     if len(ollama_list_of_models) > 1:
                         console.print(
-                            "[yellow]Для использования локальных моделей "
-                            "необходимо "
-                            "выбрать модель:[/yellow]\n"
+                            "[yellow]Select a local model:[/yellow]\n"
                             + "\n".join(
                                 [
                                     f"[magenta]{i + 1}. {model}[/magenta]"
-                                    for i, model in enumerate(
-                                        ollama_list_of_models
-                                    )
+                                    for i, model in enumerate(ollama_list_of_models)  # noqa
                                 ]
                             ),
                             highlight=False,
@@ -325,12 +324,12 @@ def main() -> None:
                         model_is_selected = False
                         while not model_is_selected:
                             model = prompt.ask(
-                                "[yellow]Введите число от 1 до "
+                                "[yellow]Enter a number from 1 to "
                                 f"{len(ollama_list_of_models)}[/yellow]",
                             )
                             if not (1 <= model <= len(ollama_list_of_models)):
                                 console.print(
-                                    "[red]Введите корректное число![/red]",
+                                    "[red]Enter a valid number![/red]",
                                     highlight=False,
                                 )
                                 continue
@@ -342,19 +341,19 @@ def main() -> None:
                 else:
                     if model not in ollama_list_of_models:
                         console.print(
-                            f"[red]{model} не является доступной моделью!"
+                            f"[red]{model} is not an available model!"
                             "[/red] "
-                            "Доступные модели: [yellow]"
+                            "Available models: [yellow]"
                             f"{', '.join(ollama_list_of_models)}[/yellow]",
                             highlight=False,
                         )
                         return None
             if model:
                 console.print(
-                    f"Выбрана модель: [yellow]{model}[/yellow]",
+                    f"Selected model: [yellow]{model}[/yellow]",
                     highlight=False,
                 )
-            # Создание клиента для общения с ИИ
+            # Create AI client
             if use_local_models:
                 client = Ollama(model=model)
             else:
@@ -366,22 +365,30 @@ def main() -> None:
                 retry = True
                 while retry:
                     with console.status(
-                        "[magenta bold]Создание сообщения коммита...",
+                        "[magenta bold]Generating commit message...",
                         spinner_style="magenta",
                     ):
                         commit_message = cut_think(
                             client.message(
-                                message=prompt_for_ai
-                                + "Git status: "
-                                + git_status.stdout
-                                + "Git diff: "
-                                + git_diff.stdout,
+                                messages=[
+                                    {
+                                        "role": "system",
+                                        "content": prompt_for_ai,
+                                    },
+                                    {
+                                        "role": "user",
+                                        "content": "Git status: "
+                                        + git_status.stdout
+                                        + "Git diff: "
+                                        + git_diff.stdout,
+                                    },
+                                ],
                                 temperature=temperature,
                                 timeout=timeout,
                             )
                         )
                     commit_with_message_from_ai = input(
-                        "Закоммитить с сообщением "
+                        "Commit with message "
                         + colored(f"'{commit_message}'", "yellow")
                         + "? [y/N/r]: "
                     )
@@ -394,22 +401,30 @@ def main() -> None:
                         encoding="utf-8",
                     )
                     console.print(
-                        "Коммит успешно создан!",
+                        "Commit created successfully!",
                         style="green bold",
                         highlight=False,
                     )
             else:
                 with console.status(
-                    "[magenta bold]Создание сообщения коммита...",
+                    "[magenta bold]Generating commit message...",
                     spinner_style="magenta",
                 ):
                     commit_message = cut_think(
                         client.message(
-                            message=prompt_for_ai
-                            + "Git status: "
-                            + git_status.stdout
-                            + "Git diff: "
-                            + git_diff.stdout,
+                            messages=[
+                                {
+                                    "role": "system",
+                                    "content": prompt_for_ai,
+                                },
+                                {
+                                    "role": "user",
+                                    "content": "Git status: "
+                                    + git_status.stdout
+                                    + "Git diff: "
+                                    + git_diff.stdout,
+                                },
+                            ],
                             temperature=temperature,
                             timeout=timeout,
                         )
@@ -417,13 +432,13 @@ def main() -> None:
                 console.print(commit_message, style="yellow", highlight=False)
                 return None
 
-        # Если нет
+        # If .git does not exist
         else:
             init_git_repo = (
                 True
                 if input(
-                    colored("Не инициализирован git репозиторий!", "red")
-                    + " Выполнить "
+                    colored("Git repository not initialized!", "red")
+                    + " Run "
                     + colored("git init", "yellow")
                     + "? [y/N]: "
                 )
@@ -453,7 +468,7 @@ def main() -> None:
                         ),
                     )
                     if input(
-                        "Сделать первый коммит с сообщением "
+                        "Make first commit with message "
                         + colored("'Initial commit?'", "yellow")
                         + " [y/N]: "
                     )

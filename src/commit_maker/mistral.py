@@ -32,15 +32,14 @@ class MistralAI:
 
     def message(
         self,
-        message: str,
+        messages: list[dict[str]],
         timeout: Optional[int],
-        role: str = "user",
-        temperature: float = 0.7,
+        temperature: float,
     ) -> str:
         """Функция для общения с моделью
 
         Args:
-            message (str): Сообщение
+            messages (list[dict[str]]): Список сообщений
             timeout (int): Таймаут(время ожидания, в сек.)
             role (str, optional): Роль сообщения. Defaults to "user".
             temperature (float, optional): Температура общения. Defaults to 0.7. #noqa
@@ -50,12 +49,7 @@ class MistralAI:
         """
         data = {
             "model": self.model,
-            "messages": [
-                {
-                    "role": role,
-                    "content": message,
-                }
-            ],
+            "messages": messages,
             "temperature": 0.7,
         }
         try:
