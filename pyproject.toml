@@ -17,8 +17,8 @@ dependencies = [
 commit_maker = "commit_maker.main:main"
 
 [project.urls]
-homepage = "https://github.com/sashayerty/commit_maker"
-github = "https://github.com/sashayerty/commit_maker"
+Homepage = "https://github.com/sashayerty/commit_maker"
+Repository = "https://github.com/sashayerty/commit_maker"
 
 [build-system]
 requires = ["setuptools>=61.0"]
