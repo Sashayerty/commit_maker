@@ -35,6 +35,11 @@ To install ollama, go to the [Ollama](https://ollama.com/download) website and c
 
 ## Installation
 
+### From PyPI
+```bash
+pip install commit-maker
+```
+
 ### From Source
 When installing from source, use the `-e` flag to always have the latest version of the utility after `git pull` **without reinstallation**!
 ```bash
