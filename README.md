@@ -17,7 +17,7 @@ This CLI utility automatically creates meaningful git commit messages using loca
 7. [License](#license)
 
 ## Features
-- Automatically generates meaningful commit messages in Russian
+- Automatically generates meaningful commit messages in Russian or English
 - Interactive confirmation before creating a commit
 - Works with both existing and new Git repositories
 - Uses local models/Mistral AI API to generate commit messages based on repository changes
