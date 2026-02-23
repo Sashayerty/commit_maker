@@ -50,7 +50,7 @@ class MistralAI:
         data = {
             "model": self.model,
             "messages": messages,
-            "temperature": 0.7,
+            "temperature": temperature,
         }
         try:
             response = requests.post(
