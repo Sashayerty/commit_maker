@@ -1,5 +1,5 @@
 # Класс для использования API Ollama
-from typing import Optional
+from typing import Optional, List, Dict
 
 import requests
 import rich.console
@@ -25,7 +25,7 @@ class Ollama:
 
     def message(
         self,
-        messages: list[dict[str]],
+        messages: List[Dict[str, str]],
         timeout: Optional[int],
         temperature: float,
     ) -> str:
@@ -46,6 +46,7 @@ class Ollama:
             "options": {
                 "temperature": temperature,
             },
+            "think": False,
             "stream": False,
         }
 

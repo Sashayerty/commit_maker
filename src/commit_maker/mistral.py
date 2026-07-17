@@ -1,5 +1,5 @@
 # Класс для использования API Mistral AI
-from typing import Optional
+from typing import Optional, List, Dict
 
 import requests
 import rich.console
@@ -14,7 +14,7 @@ class MistralAI:
     def __init__(
         self,
         api_key: str,
-        model: str = "mistral-small-latest",
+        model: str = "mistral-medium-latest",
     ):
         """Инициализация класса
 
@@ -32,7 +32,7 @@ class MistralAI:
 
     def message(
         self,
-        messages: list[dict[str]],
+        messages: List[Dict[str, str]],
         timeout: Optional[int],
         temperature: float,
     ) -> str:
