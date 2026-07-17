@@ -1,6 +1,6 @@
 # Commit Maker [![Created with Python](https://img.shields.io/badge/Created_with-Python-blue)](https://www.python.org/) [![Created with uv](https://img.shields.io/badge/Created_with-uv-purple)](https://docs.astral.sh/uv/) [![Created with ollama](https://img.shields.io/badge/Created_with-ollama-white)](https://ollama.com/)
 
-![Демонстрация](./commit_maker.svg)
+<!--![Демонстрация](./commit_maker.svg)-->
 
 ## Все коммиты в репозитории - результат работы программы
 
